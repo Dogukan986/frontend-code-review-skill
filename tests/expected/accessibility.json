@@ -1,0 +1,62 @@
+{
+  "schema_version": "1",
+  "scope": "tests/fixtures/accessibility",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "src/SignupForm.tsx",
+      "line": 4,
+      "title": "Email input has no accessible label",
+      "explanation": "The input relies only on a placeholder, so it has no programmatic label for screen readers.",
+      "evidence": "<input type=\"email\" placeholder=\"Email\" />",
+      "suggested_fix": "Add `<label htmlFor=\"email\">Email</label>` and an `id` on the input."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/clickable-non-interactive",
+      "file": "src/SignupForm.tsx",
+      "line": 5,
+      "title": "Submit control is a clickable div",
+      "explanation": "The div has an onClick but no role, tab stop or keyboard handling, so keyboard and assistive-technology users cannot submit.",
+      "evidence": "<div className=\"btn\" onClick={onSubmit}>Sign up</div>",
+      "suggested_fix": "Use `<button type=\"submit\">Sign up</button>`."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/missing-alt",
+      "file": "src/Avatar.tsx",
+      "line": 2,
+      "title": "Avatar image has no alt attribute",
+      "explanation": "The image has no `alt`, so screen readers announce the file name or skip it.",
+      "evidence": "return <img src={src} className=\"avatar\" />;",
+      "suggested_fix": "Add a descriptive `alt`, or `alt=\"\"` if the avatar is decorative."
+    },
+    {
+      "id": "F4",
+      "severity": "high",
+      "confidence": "likely",
+      "category": "accessibility",
+      "rule": "a11y/modal-focus",
+      "file": "src/Modal.tsx",
+      "line": 5,
+      "title": "Custom modal has no dialog semantics or focus management",
+      "explanation": "The modal is plain divs: no `role=\"dialog\"`/`aria-modal`, no initial focus, no focus trap and no Escape handling in the code shown.",
+      "evidence": "return <div className=\"modal-overlay\"><div className=\"modal\">{children}</div></div>;",
+      "suggested_fix": "Use the native `<dialog>` with `showModal()` or an accessible dialog library."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Expected result for the evaluation harness; labelled by the maintainers."
+  ]
+}

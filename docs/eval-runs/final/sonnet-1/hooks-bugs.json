@@ -1,0 +1,54 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/AutoSave.tsx, src/Profile.tsx, src/ResizeWatcher.tsx); scope was unspecified so the whole project was reviewed",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 6,
+      "end_line": 10,
+      "title": "Auto-save interval always saves the initial empty draft",
+      "explanation": "The effect runs once (empty deps) and the interval callback captures `draft` and `save` from the first render, where draft is \"\". Every 5 seconds it calls save(\"\") no matter what the user typed, so the user's text is never saved (or is overwritten with an empty string). The exhaustive-deps lint rule is suppressed on line 6 without justification, which is why tooling stays silent. `save` is also captured stale.",
+      "evidence": "// eslint-disable-next-line react-hooks/exhaustive-deps\n  useEffect(() => {\n    const id = setInterval(() => save(draft), 5000);\n    return () => clearInterval(id);\n  }, []);",
+      "suggested_fix": "Add `draft` and `save` to the dependency array (the interval is then recreated on change), or keep the latest values in a ref updated every render and read the ref inside the interval. Remove the eslint-disable comment."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState called after an early return",
+      "explanation": "When `user` is null the component returns before useState, so it renders with zero hooks. When `user` later becomes non-null, it calls one more hook than the previous render and React throws \"Rendered more hooks than during the previous render\", crashing the component (and the tree without an error boundary). This is a typical load-then-show flow. The rules-of-hooks lint rule is suppressed on line 5, which is why tooling stays silent. Kept at high rather than critical because the actual null-to-user transition depends on parent code not in this project.",
+      "evidence": "if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Move `const [editing, setEditing] = useState(false);` above the `if (!user) return null;` check and remove the eslint-disable comment."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 6,
+      "end_line": 9,
+      "title": "Resize listener is never removed",
+      "explanation": "The effect adds a window resize listener but returns no cleanup. After the component unmounts the listener stays on window and keeps calling setWidth on an unmounted component, leaking memory. Each remount (and each StrictMode dev double-invoke) adds another duplicate listener that fires on every resize event.",
+      "evidence": "useEffect(() => {\n    const onResize = () => setWidth(window.innerWidth);\n    window.addEventListener(\"resize\", onResize);\n  }, []);",
+      "suggested_fix": "Return a cleanup: `return () => window.removeEventListener(\"resize\", onResize);`."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only three source files exist; no Next.js config or ESLint config was present, so the router type and lint enforcement could not be determined.",
+    "Parent components that render Profile and AutoSave are not in the project, so how often user changes from null or how save is supplied could not be verified.",
+    "Nothing was executed; review is static and read-only."
+  ]
+}

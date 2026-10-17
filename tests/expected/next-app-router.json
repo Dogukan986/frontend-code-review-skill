@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "scope": "tests/fixtures/next-app-router",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/unnecessary-use-client",
+      "file": "app/page.tsx",
+      "line": 1,
+      "title": "Page marked as client component without needing it",
+      "explanation": "The page only renders static data and a child component; it uses no state, effects, handlers or browser APIs, so the directive moves the whole page to the client bundle.",
+      "evidence": "\"use client\";",
+      "suggested_fix": "Remove `\"use client\"` from the page."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/secret-in-client",
+      "file": "app/components/Checkout.tsx",
+      "line": 12,
+      "title": "Server secret read in a client component",
+      "explanation": "The file is a client module and reads a non-`NEXT_PUBLIC_` environment variable as a payment credential. It is undefined in the browser, so the request is unauthenticated, and the design pushes a secret toward the client.",
+      "evidence": "headers: { Authorization: `Bearer ${process.env.PAYMENT_SECRET_KEY}` },",
+      "suggested_fix": "Perform the charge in a Server Action or Route Handler and call that from the client."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/img-element",
+      "file": "app/components/Hero.tsx",
+      "line": 4,
+      "title": "Large hero image uses a plain <img>",
+      "explanation": "A 4000x2500 image is rendered at the top of the page with a plain `<img>`, which skips resizing, modern formats and lazy/priority handling.",
+      "evidence": "<img src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" />",
+      "suggested_fix": "Use `next/image` with explicit dimensions and `priority` for the hero."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Expected result for the evaluation harness; labelled by the maintainers."
+  ]
+}

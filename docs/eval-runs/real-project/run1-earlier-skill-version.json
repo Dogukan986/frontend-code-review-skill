@@ -1,0 +1,70 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (next-learn/dashboard/final-example, App Router, Next latest, React latest, TS strict)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "typescript",
+      "rule": "ts/unvalidated-external-data",
+      "file": "app/dashboard/invoices/page.tsx",
+      "line": 23,
+      "end_line": 23,
+      "title": "page search param is not range-validated; negative values produce a negative SQL OFFSET",
+      "explanation": "currentPage = Number(searchParams?.page) || 1 only falls back for NaN/0. A URL like ?page=-1 yields -1, and fetchFilteredInvoices (app/lib/data.ts:93) computes offset = (currentPage - 1) * ITEMS_PER_PAGE = -12, passed to \"OFFSET ${offset}\". PostgreSQL rejects a negative OFFSET (assumption: stock Postgres behavior), so the table throws and the user sees the error boundary. Non-integers like 1.5 are also passed through.",
+      "evidence": "  const currentPage = Number(searchParams?.page) || 1;",
+      "suggested_fix": "Clamp and normalize: const currentPage = Math.max(1, Math.floor(Number(searchParams?.page)) || 1); optionally also clamp to totalPages."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "app/ui/invoices/buttons.tsx",
+      "line": 19,
+      "end_line": 24,
+      "title": "Icon-only links have no accessible name",
+      "explanation": "UpdateInvoice renders a Link whose only child is a Heroicon SVG (decorative, aria-hidden by default), so the edit link is announced as an unnamed link. The same pattern exists for the previous/next arrow links in app/ui/invoices/pagination.tsx (PaginationArrow, lines 120-122), whose only content is an arrow icon. DeleteInvoice in the same file correctly uses <span className=\"sr-only\">Delete</span>.",
+      "evidence": "    <Link\n      href={`/dashboard/invoices/${id}/edit`}\n      className=\"rounded-md border p-2 hover:bg-gray-100\"\n    >\n      <PencilIcon className=\"w-5\" />\n    </Link>",
+      "suggested_fix": "Add <span className=\"sr-only\">Edit invoice</span> inside UpdateInvoice, and aria-label=\"Previous page\" / \"Next page\" on the pagination arrow Links."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "app/ui/search.tsx",
+      "line": 29,
+      "end_line": 32,
+      "title": "Search input is not associated with its label",
+      "explanation": "The <label htmlFor=\"search\"> points to id \"search\", but the <input> rendered at line 32 has no id attribute (lines 32-39), so the label is not connected to any control. Screen-reader users get at best the placeholder as fallback name, and clicking the label does nothing. The component is used on both /dashboard/invoices and /dashboard/customers.",
+      "evidence": "      <label htmlFor=\"search\" className=\"sr-only\">\n        Search\n      </label>\n      <input",
+      "suggested_fix": "Add id=\"search\" to the input (or use aria-label={placeholder})."
+    },
+    {
+      "id": "F4",
+      "severity": "low",
+      "confidence": "likely",
+      "category": "typescript",
+      "rule": "ts/non-null-assertion",
+      "file": "app/lib/data.ts",
+      "line": 12,
+      "end_line": 12,
+      "title": "process.env.POSTGRES_URL! asserted non-null in several modules",
+      "explanation": "process.env values are string | undefined; the ! hides the missing-variable case, so a misconfigured deployment fails later with a confusing connection error instead of a clear message. Same pattern in auth.ts:9, app/lib/actions.ts:10, app/seed/route.ts:5 and app/query/route.ts:3, each creating its own postgres client.",
+      "evidence": "const sql = postgres(process.env.POSTGRES_URL!, { ssl: 'require' });",
+      "suggested_fix": "Create one shared sql client module that checks the variable and throws an explicit error if it is missing; import it everywhere."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Reviewed all source files under app/ plus config, auth and proxy files; skipped lockfiles, images and node_modules.",
+    "Color contrast, focus appearance and screen-reader output were not verified from source alone.",
+    "ESLint config is not present in the project; lint overlap could not be checked, so lint-covered issues were skipped by default.",
+    "Security issues (e.g. unauthenticated server actions and seed route) and business logic (e.g. floating-point amount*100) are out of scope for this review.",
+    "Negative OFFSET behavior was inferred from PostgreSQL semantics, not run."
+  ]
+}

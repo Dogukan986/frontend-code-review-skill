@@ -1,0 +1,54 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState called after an early return",
+      "explanation": "When user is null the component returns before useState; when user later becomes non-null (typical after loading) the render calls one more hook than the previous render and React throws 'Rendered more hooks than during the previous render', crashing the component. The rules-of-hooks lint rule is suppressed on the line, which is why tooling is silent.",
+      "evidence": "if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Move useState(false) above the early return and keep the null check after all hooks. Remove the eslint-disable comment."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 7,
+      "end_line": 10,
+      "title": "Auto-save interval always saves the initial empty draft",
+      "explanation": "The effect runs once with deps [], so the interval callback closes over draft from the first render (\"\"). Every 5 seconds save('') is called regardless of what the user typed, so the draft is never saved and may overwrite saved data with an empty string. The exhaustive-deps rule is suppressed with no justification. The same stale reference applies to the save prop.",
+      "evidence": "useEffect(() => {\n    const id = setInterval(() => save(draft), 5000);\n    return () => clearInterval(id);\n  }, []);",
+      "suggested_fix": "Add draft and save to the dependency array (the interval is recreated on change), or keep the latest draft/save in refs updated each render and read them in the interval. Remove the eslint-disable comment."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 6,
+      "end_line": 9,
+      "title": "Resize listener is never removed",
+      "explanation": "The effect adds a window resize listener but returns no cleanup. After the component unmounts the listener stays registered, keeps calling setWidth on an unmounted component and retains it in memory; with remounts (or StrictMode double-invoke) listeners accumulate.",
+      "evidence": "useEffect(() => {\n    const onResize = () => setWidth(window.innerWidth);\n    window.addEventListener(\"resize\", onResize);\n  }, []);",
+      "suggested_fix": "Return a cleanup: return () => window.removeEventListener(\"resize\", onResize);"
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only three source files, package.json and tsconfig.json exist; no ESLint config or Next.js config was present.",
+    "Static reading only; nothing was executed.",
+    "Callers of these components were not available, so how often user flips from null to non-null in Profile is assumed from the prop type."
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/next-app-router (whole project; no scope given by the user)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/secret-in-client",
+      "file": "app/components/Checkout.tsx",
+      "line": 12,
+      "title": "Server-only payment secret read in a \"use client\" component",
+      "explanation": "Checkout.tsx starts with \"use client\", so it is bundled for the browser. It builds an Authorization header from process.env.PAYMENT_SECRET_KEY, which has no NEXT_PUBLIC_ prefix. A non-prefixed variable is undefined in the browser, so the charge request is sent with 'Bearer undefined' and payment fails. If the key were ever inlined or moved to a NEXT_PUBLIC_ name to make it work, it would be exposed to every visitor. Severity is high rather than critical because no secret value is hard-coded or inlined in the code I read. The component is not imported anywhere in the reviewed files, but it is still a client module.",
+      "evidence": "headers: { Authorization: `Bearer ${process.env.PAYMENT_SECRET_KEY}` },",
+      "suggested_fix": "Move the charge call to a Server Action or Route Handler that reads PAYMENT_SECRET_KEY on the server. Have the client component call that action or endpoint and keep only the status state."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/img-element",
+      "file": "app/components/Hero.tsx",
+      "line": 4,
+      "title": "Large above-the-fold hero uses a plain <img> instead of next/image",
+      "explanation": "The Hero is rendered at the top of the home page. The file name (hero-4000x2500.jpg) indicates a very large source image. A plain <img> is served at full size with no resizing, no modern formats and no reserved dimensions, which can hurt LCP and cause layout shift. The repo has no ESLint config, so I cannot assume @next/next/no-img-element is active. The assumption is that the file really is about 4000x2500 px; I only saw the file name.",
+      "evidence": "<img src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" />",
+      "suggested_fix": "Use next/image: <Image src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" width={1200} height={750} priority />. Set sizes if the image is responsive."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/unnecessary-use-client",
+      "file": "app/page.tsx",
+      "line": 1,
+      "title": "Page is marked \"use client\" but uses no client-only features",
+      "explanation": "page.tsx has no hooks, event handlers or browser APIs. It imports Hero, which has none either, and a static posts array from data/posts.ts. The directive turns the whole page tree into client code, which adds bundle size and prevents it from fetching data on the server later. Severity stays low because the data here is a static import and nothing is blocked today.",
+      "evidence": "\"use client\";",
+      "suggested_fix": "Remove the \"use client\" directive so the page is a Server Component. Add the directive only to interactive leaf components."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the 6 source files in the fixture were reviewed (package.json, tsconfig.json, layout.tsx, page.tsx, Hero.tsx, Checkout.tsx, data/posts.ts). There is no ESLint or next.config file.",
+    "The real size of public/hero-4000x2500.jpg was not verified; the public folder is not in the fixture.",
+    "Checkout.tsx is not imported by any reviewed file, so how it is used was not checked.",
+    "Nothing was run. Accessibility was checked from source only: contrast, focus appearance and screen-reader output were not verified.",
+    "Glob and Grep were not available in this session, so Bash find and cat were used read-only to list and read files."
+  ]
+}

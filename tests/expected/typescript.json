@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "scope": "tests/fixtures/typescript",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/any-boundary",
+      "file": "src/api.ts",
+      "line": 6,
+      "title": "Exported API function returns Promise<any>",
+      "explanation": "`getUser` is exported and returns `any`, so every caller loses type checking for the response.",
+      "evidence": "export async function getUser(id: string): Promise<any> {",
+      "suggested_fix": "Return `Promise<User>` after validating the response, or `Promise<unknown>` and narrow at the call site."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/unsafe-assertion",
+      "file": "src/api.ts",
+      "line": 13,
+      "title": "Stored JSON is double-cast to User",
+      "explanation": "`JSON.parse(raw as string) as unknown as User` forces unvalidated storage data into `User`, and also casts a possible null to string.",
+      "evidence": "return JSON.parse(raw as string) as unknown as User;",
+      "suggested_fix": "Check `raw` for null and validate the parsed shape before returning it as `User`."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/non-null-assertion",
+      "file": "src/api.ts",
+      "line": 17,
+      "title": "Non-null assertion on Map.get",
+      "explanation": "`Map.get` returns undefined when the key is absent, so this throws a TypeError if there is no admin entry.",
+      "evidence": "return users.get(\"admin\")!.email;",
+      "suggested_fix": "Handle the missing case explicitly, e.g. `users.get(\"admin\")?.email`."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Expected result for the evaluation harness; labelled by the maintainers."
+  ]
+}

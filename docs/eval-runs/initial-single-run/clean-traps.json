@@ -1,0 +1,11 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/Counter.tsx, src/Dialog.tsx, src/Field.tsx, src/Steps.tsx, package.json, tsconfig.json)",
+  "findings": [],
+  "suspicious_content": [],
+  "limitations": [
+    "No ESLint config or next.config.* exists in the project; lint rules were not assumed either way.",
+    "Only four small components exist; no parent or usage sites were available, so cross-component behaviour was not reviewed.",
+    "Static review only; nothing was run or rendered."
+  ]
+}

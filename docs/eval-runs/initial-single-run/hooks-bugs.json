@@ -1,0 +1,54 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/AutoSave.tsx, src/Profile.tsx, src/ResizeWatcher.tsx); React 18.3, TypeScript strict",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 6,
+      "end_line": 10,
+      "title": "Autosave interval captures the initial empty draft and saves stale text forever",
+      "explanation": "The effect runs once on mount (deps []), so the interval callback closes over the first render's draft, which is the empty string. Every 5 seconds save(draft) is called with \"\" regardless of what the user typed, so the user's text is never persisted and an existing saved value may be overwritten with an empty string. The exhaustive-deps lint rule is explicitly disabled on this line, so the suppression is why the linter does not catch it. The same applies to the save prop, which is also frozen at its first-render identity.",
+      "evidence": "// eslint-disable-next-line react-hooks/exhaustive-deps\n  useEffect(() => {\n    const id = setInterval(() => save(draft), 5000);\n    return () => clearInterval(id);\n  }, []);",
+      "suggested_fix": "Remove the suppression and list [draft, save] as dependencies (the interval is recreated on change), or keep the latest values in refs updated each render (draftRef.current = draft; saveRef.current = save) and have the interval call saveRef.current(draftRef.current)."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState is called after an early return, with rules-of-hooks suppressed",
+      "explanation": "When user is null the component returns before useState runs; when user is non-null it calls useState. If the user prop changes between null and an object across renders (for example while a profile loads), the number of hooks changes between renders and React throws 'Rendered more hooks than during the previous render'. The rules-of-hooks lint rule is disabled on this line, which is why it is not flagged. Severity is high rather than critical because whether the prop actually transitions in the app depends on parent code not present in this project.",
+      "evidence": "if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Remove the eslint-disable and call useState(false) at the top of the component before the `if (!user) return null;` early return."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 6,
+      "end_line": 9,
+      "title": "Window resize listener is never removed",
+      "explanation": "The effect adds a resize listener on window but returns no cleanup. After the component unmounts the listener stays registered, keeps the closure alive and keeps calling setWidth on an unmounted component on every resize. Each remount (route changes, conditional rendering, StrictMode dev double-invoke) adds another permanent listener, so handlers accumulate.",
+      "evidence": "useEffect(() => {\n    const onResize = () => setWidth(window.innerWidth);\n    window.addEventListener(\"resize\", onResize);\n  }, []);",
+      "suggested_fix": "Return a cleanup: `return () => window.removeEventListener(\"resize\", onResize);`. Optionally call onResize() once on mount to initialise width instead of 0."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the 3 files under src/ plus package.json and tsconfig.json were present and reviewed; no ESLint config or next.config.* exists, so lint behaviour beyond the inline eslint-disable comments is unknown.",
+    "Parent components that render Profile and AutoSave are not in the project, so whether the user prop actually toggles between null and an object (F2) and what save does (F1) could not be verified.",
+    "Nothing was executed; findings come from static reading only. The Glob tool was unavailable, so files were listed with a read-only find command."
+  ]
+}

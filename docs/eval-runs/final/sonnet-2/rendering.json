@@ -1,0 +1,40 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/Leaderboard.tsx, src/TodoList.tsx)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/index-key",
+      "file": "src/TodoList.tsx",
+      "line": 6,
+      "end_line": 8,
+      "title": "Array index used as key on a removable list of uncontrolled inputs",
+      "explanation": "Rows can be removed via onRemove and each row holds an uncontrolled input (defaultValue) with its own typed state. With key={i}, removing a row makes React reuse the DOM instances by position, so text the user typed into a later row shifts to the wrong todo (and defaultValue is not re-applied), leaving edits attached to the wrong item.",
+      "evidence": "{todos.map((t, i) => (\n        <li key={i}>\n          <input defaultValue={t.text} aria-label={`Todo ${i + 1}`} />",
+      "suggested_fix": "Use the stable id: <li key={t.id}>."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/expensive-render-work",
+      "file": "src/Leaderboard.tsx",
+      "line": 8,
+      "end_line": 9,
+      "title": "Full 50k-row copy and sort on every keystroke",
+      "explanation": "The comment states players holds about 50,000 rows. The copy and sort at render time run on every render, including each keystroke that updates query state, although the sort depends only on players. This blocks the main thread on each keypress and makes typing janky.",
+      "evidence": "const ranked = [...players].sort((a, b) => b.score - a.score);\n  const visible = ranked.filter((p) => p.name.includes(query)).slice(0, 20);",
+      "suggested_fix": "Wrap the sort in useMemo(() => [...players].sort(...), [players]) and filter the memoized result by query; or sort once upstream/server-side."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only two source files exist in the fixture; no Next.js config or ESLint config was present.",
+    "The 50,000-row size comes from a code comment and was not verified against the data source.",
+    "Parent components and how players is passed (stable identity) were not visible."
+  ]
+}

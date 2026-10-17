@@ -1,0 +1,57 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/next-app-router (whole project)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/secret-in-client",
+      "file": "app/components/Checkout.tsx",
+      "line": 12,
+      "end_line": 12,
+      "title": "Server-only payment secret read inside a \"use client\" module",
+      "explanation": "Checkout.tsx is a client module (\"use client\" on line 1). Its pay() function reads process.env.PAYMENT_SECRET_KEY, a non-NEXT_PUBLIC_ variable. Next.js does not inline non-prefixed variables into client bundles, so in the browser the Authorization header becomes 'Bearer undefined' and the charge request fails. The secret value is not hard-coded, so nothing leaks as written, but the pattern places a payment credential in client code. If someone renames the variable to NEXT_PUBLIC_PAYMENT_SECRET_KEY to make it work, the secret would be shipped to every visitor. Assumption: the variable name denotes a real secret, as its name suggests.",
+      "evidence": "headers: { Authorization: `Bearer ${process.env.PAYMENT_SECRET_KEY}` },",
+      "suggested_fix": "Move the charge call into a Server Action or Route Handler that reads PAYMENT_SECRET_KEY on the server, and have Checkout call that endpoint with no credential in the browser."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/img-element",
+      "file": "app/components/Hero.tsx",
+      "line": 4,
+      "end_line": 4,
+      "title": "Large above-the-fold hero image uses a plain img element",
+      "explanation": "Hero is the first element rendered by the page (app/page.tsx line 9), so this image is above the fold. A plain <img> gets no automatic sizing, lazy-loading control, modern format conversion or priority hint, which can hurt LCP and cause layout shift. The project depends on next ^14.2.0, so next/image is available. Assumption: the file size is large, inferred from the file name hero-4000x2500.jpg; the actual bytes and dimensions were not inspected.",
+      "evidence": "<img src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" />",
+      "suggested_fix": "Replace with next/image: <Image src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" width={4000} height={2500} priority /> (or a smaller source with matching width and height)."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/unnecessary-use-client",
+      "file": "app/page.tsx",
+      "line": 1,
+      "end_line": 1,
+      "title": "Page file is marked \"use client\" without using any client-only feature",
+      "explanation": "app/page.tsx declares \"use client\" but uses no state, effects, event handlers, browser APIs or context. Its children (Hero and the static posts array from data/posts.ts) are also client-agnostic. The directive forces the page and its data into the client bundle and rules out a server-rendered page that could fetch data on the server. Impact is limited because the data is a small static array.",
+      "evidence": "\"use client\";",
+      "suggested_fix": "Remove the \"use client\" directive so the page renders on the server. Keep the directive only on interactive leaf components."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "No next.config.* file, ESLint config, lockfile or .env file exists in the fixture, so framework config, lint suppressions and environment setup could not be checked.",
+    "app/components/Checkout.tsx is not imported by any file in the fixture; it was reviewed as a standalone client module.",
+    "Checkout.tsx pay() has no error handling: if the fetch rejects, status stays 'paying' and the button stays disabled. This is a real defect but no reference rule covers it, so it is not reported as a finding.",
+    "Hero image size is inferred from the file name only; the file was not inspected. The payment API contract at api.payments.example was not verifiable.",
+    "Color contrast, focus appearance and screen-reader output were not assessed, as they cannot be verified from source alone.",
+    "No runtime or build verification was performed; the review is source-only and read-only, and no project commands were run."
+  ]
+}

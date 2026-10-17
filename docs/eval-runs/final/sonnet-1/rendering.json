@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "scope": "src/ (whole project)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/expensive-render-work",
+      "file": "src/Leaderboard.tsx",
+      "line": 8,
+      "end_line": 9,
+      "title": "50,000-row copy and sort re-runs on every keystroke",
+      "explanation": "A comment at line 5 states `players` always holds about 50,000 rows. The copy and sort at line 8 run in the render body, and typing in the search input calls setQuery, which re-renders the component. Each keystroke therefore copies and sorts 50k items and then filters them, which blocks the main thread and makes typing janky. The sort depends only on `players`, not on `query`.",
+      "evidence": "const ranked = [...players].sort((a, b) => b.score - a.score);\n  const visible = ranked.filter((p) => p.name.includes(query)).slice(0, 20);",
+      "suggested_fix": "Compute the ranking once per `players` change, for example `const ranked = useMemo(() => [...players].sort((a, b) => b.score - a.score), [players]);`, or sort before passing the data in. Only the filter and slice then run per keystroke."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/index-key",
+      "file": "src/TodoList.tsx",
+      "line": 6,
+      "end_line": 8,
+      "title": "Array index used as key on removable rows that hold uncontrolled input state",
+      "explanation": "Rows can be removed through onRemove, and each row has an uncontrolled `<input defaultValue>` that holds the user's edits. With `key={i}`, removing a middle item makes React reuse the DOM instance by position. The remaining rows keep the typed text of the removed row's position, and the input values shift to the wrong todos. The `defaultValue` is only read on mount, so the stale text is not reset.",
+      "evidence": "{todos.map((t, i) => (\n        <li key={i}>\n          <input defaultValue={t.text} aria-label={`Todo ${i + 1}`} />",
+      "suggested_fix": "Use the stable id: `<li key={t.id}>`. The aria-label can keep using the index."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the 2 files under src/ plus package.json and tsconfig.json were present and reviewed; no Next.js config or ESLint config exists.",
+    "The size of `players` (about 50,000 rows) comes from a code comment and was not verified against a real data source.",
+    "Callers of Leaderboard and TodoList were not visible, so how often the parent re-renders was not assessed.",
+    "Only the rendering reference was loaded, as the code had no hooks, Next.js or accessibility issues to examine beyond what was read."
+  ]
+}

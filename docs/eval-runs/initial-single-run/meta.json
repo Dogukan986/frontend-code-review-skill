@@ -1,0 +1,6 @@
+{
+  "agent": "Claude Code subagents (one per fixture, isolated copy without expected/)",
+  "model": "sonnet (claude-sonnet-5-5)",
+  "date": "2026-10-17",
+  "note": "Single run, skill v0.1.0. Fixtures are small and written by the skill author, so this is a smoke test, not evidence of real-world precision. Subagents had no Glob/Grep and listed files with read-only Bash (find/cat)."
+}

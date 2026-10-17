@@ -1,0 +1,71 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (App Router, Next.js latest, React latest, TypeScript strict)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "likely",
+      "category": "typescript",
+      "rule": "ts/unvalidated-external-data",
+      "file": "app/lib/data.ts",
+      "line": 71,
+      "end_line": 72,
+      "title": "Card counts read from the query result object instead of the first row",
+      "explanation": "sql`SELECT COUNT(*) ...` is untyped, so data[0] is the postgres.js result array (RowList), not a row. Its `.count` property is the number of returned rows (1 for an aggregate query), not the COUNT(*) value, which lives in data[0][0].count. The untyped result lets this compile, so the dashboard cards 'Total Invoices' and 'Total Customers' would show 1 instead of the real totals. The same file reads data[0].count in fetchInvoicesPages, where data is a RowList, so that call has the right shape. Assumption: postgres.js RowList.count semantics (rows returned for SELECT).",
+      "evidence": "    const numberOfInvoices = Number(data[0].count ?? '0');\n    const numberOfCustomers = Number(data[1].count ?? '0');",
+      "suggested_fix": "Type the queries (for example sql<{ count: string }[]>) and read the first row: Number(data[0][0].count ?? '0') and Number(data[1][0].count ?? '0')."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "app/ui/search.tsx",
+      "line": 29,
+      "end_line": 32,
+      "title": "Search label points to an id that the input does not have",
+      "explanation": "The label uses htmlFor=\"search\" but the <input> has no id, so the label is not associated with the field. The field only has a placeholder as a fallback name, which is not a reliable label, and clicking the label does not focus the input. The component is used on the invoices and customers pages.",
+      "evidence": "      <label htmlFor=\"search\" className=\"sr-only\">\n        Search\n      </label>\n      <input",
+      "suggested_fix": "Add id=\"search\" to the <input> (or wrap it in the label)."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "app/ui/invoices/buttons.tsx",
+      "line": 19,
+      "end_line": 24,
+      "title": "Icon-only links have no accessible name (edit invoice, pagination arrows)",
+      "explanation": "UpdateInvoice renders a Link whose only content is a decorative heroicon, with no text, aria-label or visually hidden text, so screen-reader users hear an unnamed link for every table row. The same pattern appears in app/ui/invoices/pagination.tsx lines 120-122, where the previous/next arrow Link contains only an icon. DeleteInvoice in the same file shows the intended pattern with an sr-only span.",
+      "evidence": "    <Link\n      href={`/dashboard/invoices/${id}/edit`}\n      className=\"rounded-md border p-2 hover:bg-gray-100\"\n    >\n      <PencilIcon className=\"w-5\" />\n    </Link>",
+      "suggested_fix": "Add a visually hidden label such as <span className=\"sr-only\">Edit invoice</span> (or aria-label) inside the link. Do the same for the previous/next page arrows in pagination.tsx."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "app/ui/dashboard/nav-links.tsx",
+      "line": 42,
+      "end_line": 43,
+      "title": "Nav links and Sign Out button lose their text name below the md breakpoint",
+      "explanation": "The link text is in an element with Tailwind `hidden md:block`, which is display:none on small screens. Display:none content is excluded from the accessibility tree, so on mobile each nav link contains only a decorative icon and has no accessible name. The Sign Out button in app/ui/dashboard/sidenav.tsx lines 28-29 uses the same pattern (<div className=\"hidden md:block\">Sign Out</div>). Assumption: Heroicons render with aria-hidden and the project has no other label.",
+      "evidence": "            <LinkIcon className=\"w-6\" />\n            <p className=\"hidden md:block\">{link.name}</p>",
+      "suggested_fix": "Use sr-only plus md:not-sr-only (or an aria-label on the Link and button) so the name stays available when the text is visually hidden."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Source review only: nothing was built or run, so F1 (postgres.js RowList.count behaviour) and F4 (icon aria-hidden defaults) rely on library behaviour not verified here.",
+    "No ESLint config is present in the project root, so jsx-a11y and react-hooks lint coverage could not be assessed.",
+    "Color contrast, focus appearance and screen-reader output were not evaluated.",
+    "app/ui/skeletons.tsx, app/ui/acme-logo.tsx, app/lib/placeholder-data.ts, app/lib/definitions.ts and styling files were only skimmed or searched, not read line by line.",
+    "Security, authorization and business-logic topics (SQL access, delete without error handling, unauthenticated seed/query routes, currency math) are out of scope for this skill and were not reported.",
+    "package.json uses next/react 'latest', so the exact framework version, and behaviour tied to it, could not be determined."
+  ]
+}

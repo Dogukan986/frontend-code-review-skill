@@ -1,0 +1,64 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/Avatar.tsx, src/Modal.tsx, src/SignupForm.tsx)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "src/SignupForm.tsx",
+      "line": 4,
+      "title": "Email input has no programmatic label",
+      "explanation": "The email field has only a placeholder, no <label>, aria-label or aria-labelledby. Screen-reader users get no reliable name for the field, and the placeholder disappears on input. This is the main field of the signup flow.",
+      "evidence": "<input type=\"email\" placeholder=\"Email\" />",
+      "suggested_fix": "Add <label htmlFor=\"email\">Email</label> and give the input id=\"email\" (and name/autoComplete=\"email\"), or add aria-label=\"Email\"."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/clickable-non-interactive",
+      "file": "src/SignupForm.tsx",
+      "line": 5,
+      "title": "Submit action is a clickable div, not keyboard accessible",
+      "explanation": "The primary 'Sign up' action is a <div> with onClick and no role, tabIndex or key handler, so keyboard and assistive-technology users cannot focus or activate it. There is no nested real submit control, so the form can only be submitted via Enter in the input, if at all. Also, onSubmit is passed directly to both the form and the div click, so a pointer click may call it without preventDefault and with a click event.",
+      "evidence": "<div className=\"btn\" onClick={onSubmit}>Sign up</div>",
+      "suggested_fix": "Use <button type=\"submit\">Sign up</button> and remove the onClick so the form's onSubmit handles activation."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/missing-alt",
+      "file": "src/Avatar.tsx",
+      "line": 2,
+      "title": "Image has no alt attribute",
+      "explanation": "The <img> has no alt attribute at all, so screen readers may announce the file name/URL. If the avatar is decorative, alt=\"\" is needed; otherwise a meaningful description.",
+      "evidence": "return <img src={src} className=\"avatar\" />;",
+      "suggested_fix": "Add an alt prop (e.g. an optional `alt` prop on Avatar, such as the user's name), or alt=\"\" if the avatar is purely decorative."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "accessibility",
+      "rule": "a11y/modal-focus",
+      "file": "src/Modal.tsx",
+      "line": 5,
+      "title": "Custom modal has no dialog semantics, focus management or Escape handling",
+      "explanation": "The modal is built from plain divs with no role=\"dialog\", aria-modal, accessible name, initial focus, focus trap, focus return or Escape-to-close, and it does not use native <dialog> or an accessible library. Keyboard focus stays behind the overlay. Assumption: it is used as a blocking modal (name and overlay class suggest so); no consumer is in the project, hence medium.",
+      "evidence": "return <div className=\"modal-overlay\"><div className=\"modal\">{children}</div></div>;",
+      "suggested_fix": "Use native <dialog> with showModal(), or a library such as Radix Dialog / Headless UI; otherwise add role=\"dialog\" aria-modal=\"true\" aria-labelledby, move focus in on open, trap focus, close on Escape and restore focus on close."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only three source files exist; no consumers of Modal, Avatar or SignupForm were available, so usage context is assumed.",
+    "Colour contrast, focus appearance and real screen-reader output cannot be verified from source alone.",
+    "No ESLint config was present, so eslint-plugin-jsx-a11y is not visibly enabled."
+  ]
+}

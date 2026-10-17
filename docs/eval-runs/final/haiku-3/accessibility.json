@@ -1,0 +1,69 @@
+{
+  "schema_version": "1",
+  "scope": "whole project: src/Avatar.tsx, src/Modal.tsx, src/SignupForm.tsx",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "src/SignupForm.tsx",
+      "line": 4,
+      "end_line": 4,
+      "title": "Email input has only a placeholder and no accessible label",
+      "explanation": "The only form field in the signup form relies on placeholder=\"Email\" as its sole description. A placeholder is not a programmatic label: there is no <label>, aria-label or aria-labelledby, so screen readers announce an unnamed edit field and the placeholder disappears once the user types. The input also has no id or name, so no label can be associated later without a change. This is a form field in the main signup flow, hence high.",
+      "evidence": "<input type=\"email\" placeholder=\"Email\" />",
+      "suggested_fix": "Add a visible <label htmlFor=\"email\">Email</label> and give the input id=\"email\" (and name=\"email\"). Keep the placeholder only as a hint, if at all."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/clickable-non-interactive",
+      "file": "src/SignupForm.tsx",
+      "line": 5,
+      "end_line": 5,
+      "title": "Primary Sign up action is a div with onClick and no keyboard support",
+      "explanation": "The Sign up control is a <div> with onClick and no role, tabIndex or key handler. Keyboard users cannot Tab to it and it is not announced as a button by assistive technology. The element is the primary action of the form. Enter in the email field may still submit the form natively (an assumption about browser implicit submission), but the visible Sign up control itself cannot be reached or activated from the keyboard, and the form has no submit button for the control to act as.",
+      "evidence": "<div className=\"btn\" onClick={onSubmit}>Sign up</div>",
+      "suggested_fix": "Replace the div with a real button: <button type=\"submit\" className=\"btn\">Sign up</button>. The form's onSubmit already handles the action, so the onClick can be removed."
+    },
+    {
+      "id": "F3",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/missing-alt",
+      "file": "src/Avatar.tsx",
+      "line": 2,
+      "end_line": 2,
+      "title": "Avatar image has no alt attribute",
+      "explanation": "The <img> has no alt attribute at all, so screen readers fall back to announcing the file name from src or skip the image. An avatar usually identifies a person, so it is informative content. Severity is medium because the component has no visible context in this fixture; it becomes high if the avatar is the only identifier for a user in a main flow.",
+      "evidence": "<img src={src} className=\"avatar\" />",
+      "suggested_fix": "Add an alt prop, for example alt={name ? `${name} avatar` : \"\"} with the user's name passed in, or alt=\"\" only if the avatar is purely decorative next to a visible name."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/modal-focus",
+      "file": "src/Modal.tsx",
+      "line": 5,
+      "end_line": 5,
+      "title": "Custom modal has no dialog semantics, focus management or Escape handling",
+      "explanation": "The modal is built from plain divs with no role=\"dialog\", no aria-modal, no accessible name, no initial focus move, no focus trap and no Escape-to-close handler, and it does not use native <dialog> or a focus-managing library. When open, keyboard focus stays on the page behind the overlay, so users can tab into hidden content and have no keyboard way to dismiss the modal. Severity is medium because the blocking behaviour and usage sites are not visible in this fixture; it rises to high if this modal gates a main flow.",
+      "evidence": "return <div className=\"modal-overlay\"><div className=\"modal\">{children}</div></div>;",
+      "suggested_fix": "Use the native <dialog> element with showModal() when open (which traps focus and handles Escape), or add role=\"dialog\", aria-modal=\"true\", aria-labelledby, initial focus into the dialog, an Escape key handler and focus return to the trigger on close."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the three files under src/ were present and reviewed; package.json and tsconfig.json were read for context. No ESLint config, eslint-plugin-jsx-a11y setup, CSS or stylesheet was present, so styling of .btn, .modal and .avatar and any color contrast or focus-visible styling could not be verified and were not assessed.",
+    "The usage sites of Modal, Avatar and SignupForm were not visible; severities for F3 and F4 assume typical usage and are stated in their explanations.",
+    "Categories react-hooks, rendering, typescript and nextjs were checked against the code. No hooks, Next.js APIs or type-safety issues were present in the fixture, so no findings were raised there.",
+    "Files were listed with a read-only find command and read with the file reader; no files were modified and no project commands were run."
+  ]
+}

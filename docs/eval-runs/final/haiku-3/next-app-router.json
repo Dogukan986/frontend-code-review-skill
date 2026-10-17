@@ -1,0 +1,57 @@
+{
+  "schema_version": "1",
+  "scope": "whole project: fixtures/next-app-router",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/secret-in-client",
+      "file": "app/components/Checkout.tsx",
+      "line": 12,
+      "end_line": 12,
+      "title": "Server-only payment secret read in a \"use client\" component",
+      "explanation": "Checkout.tsx is a client module (line 1 is \"use client\"). Its pay() function calls the payments API directly from the browser (line 10) and builds the Bearer header from process.env.PAYMENT_SECRET_KEY (line 12), a variable without the NEXT_PUBLIC_ prefix. Next.js does not inline non-prefixed variables into client bundles, so at runtime the browser sends \"Bearer undefined\" and every charge fails. The obvious workaround of renaming it to NEXT_PUBLIC_PAYMENT_SECRET_KEY would ship the real secret to every visitor. No secret value is hard-coded, so this is rated high, not critical. Assumption: the deployment does not set a NEXT_PUBLIC_ variant of this name, which cannot be seen from the fixture. Checkout.tsx is not imported by any file in the fixture today (app/page.tsx imports only Hero and posts), so the problem is latent until it is wired in.",
+      "evidence": "      headers: { Authorization: `Bearer ${process.env.PAYMENT_SECRET_KEY}` },",
+      "suggested_fix": "Move the charge call into a Route Handler or Server Action that reads process.env.PAYMENT_SECRET_KEY on the server. Have Checkout POST the order to that endpoint and remove the Authorization header and the direct call to https://api.payments.example/charge from the client component."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/img-element",
+      "file": "app/components/Hero.tsx",
+      "line": 4,
+      "end_line": 4,
+      "title": "Large above-the-fold hero image uses a plain img instead of next/image",
+      "explanation": "The hero <img> sits in the page header at the top of the viewport and loads /hero-4000x2500.jpg with no width, height, sizing, priority or format optimization. The file name indicates a 4000x2500 source, which is evidently large for a hero. Without next/image the browser downloads the full file, cannot reserve layout space, and the image can delay LCP and cause layout shift. The project declares next ^14.2.0 in package.json, so next/image is available. Assumption: the file name reflects its actual size; the file bytes were not inspected. The alt text is present, so this is not an accessibility finding.",
+      "evidence": "      <img src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" />",
+      "suggested_fix": "Use next/image with explicit dimensions and priority for the above-the-fold image, for example: <Image src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" width={4000} height={2500} priority /> (import Image from \"next/image\"). Use the real intrinsic dimensions or a sized variant."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/unnecessary-use-client",
+      "file": "app/page.tsx",
+      "line": 1,
+      "end_line": 1,
+      "title": "Route page marked \"use client\" without using any client-only feature",
+      "explanation": "The page declares \"use client\" but uses no state, effects, handlers, browser APIs or context. Its only imports are Hero, which is also free of client features, and the static posts array in data/posts.ts, which could render on the server. The directive therefore moves the whole page to client rendering and grows the client bundle for no benefit. Rated low because nothing currently blocks server data fetching; the cost is bundle size and lost server rendering.",
+      "evidence": "\"use client\";",
+      "suggested_fix": "Remove the \"use client\" directive from app/page.tsx so the page is a Server Component. Keep the directive only on leaf components that need interactivity."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Read every file in the fixture: package.json, tsconfig.json, app/layout.tsx, app/page.tsx, app/components/Hero.tsx, app/components/Checkout.tsx and data/posts.ts. The fixture contains no next.config.*, ESLint config, lockfile or test files, so framework config and lint suppressions could not be checked.",
+    "The Hero image size is inferred from its file name; the image file itself was not inspected.",
+    "The NEXT_PUBLIC_ prefix and other environment settings of any deployment are not visible, so the F1 impact depends on how the variable is set at runtime.",
+    "Checkout.tsx is not imported anywhere in the fixture. F1 concerns code that would be exposed once wired in.",
+    "Not reported because it falls outside the five review categories: Checkout.pay() has no error handling. If fetch rejects, status stays \"paying\" and the button stays disabled. This is a correctness issue for a separate review.",
+    "Read-only review: no commands were run and no build, type check or lint was executed, so compiler and runtime behaviour was judged from the code alone."
+  ]
+}

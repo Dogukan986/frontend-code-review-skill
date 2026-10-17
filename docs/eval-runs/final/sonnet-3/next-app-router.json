@@ -1,0 +1,53 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (next-app-router fixture, App Router, Next 14, React 18, strict TS)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/secret-in-client",
+      "file": "app/components/Checkout.tsx",
+      "line": 12,
+      "title": "Server-only payment secret read in a client component",
+      "explanation": "Checkout.tsx starts with \"use client\", so pay() runs in the browser. PAYMENT_SECRET_KEY has no NEXT_PUBLIC_ prefix, so Next.js does not inline it in the client bundle and it is undefined there. Every click sends 'Bearer undefined', so the charge request is rejected and the payment flow is broken. The code also shows the intent to authenticate to a payments API from the browser, and anyone who made the key available to the client (for example by renaming it NEXT_PUBLIC_) would expose it to every visitor. No hard-coded secret value was found, so this is high, not critical. Note: the component is not imported anywhere in the project, so reachability was not traced.",
+      "evidence": "headers: { Authorization: `Bearer ${process.env.PAYMENT_SECRET_KEY}` },",
+      "suggested_fix": "Move the charge call to a Server Action or Route Handler that reads PAYMENT_SECRET_KEY on the server. Have the client component call that endpoint and only show status."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/unnecessary-use-client",
+      "file": "app/page.tsx",
+      "line": 1,
+      "title": "Page-level \"use client\" with no client-only features",
+      "explanation": "The page only renders static JSX from the imported posts array and the Hero component. Neither page.tsx nor Hero.tsx uses state, effects, event handlers or browser APIs, and data/posts.ts is plain data. The directive turns the whole route into client code, which increases the JS bundle and prevents the page from being a Server Component or fetching data on the server later.",
+      "evidence": "\"use client\";",
+      "suggested_fix": "Remove \"use client\" from app/page.tsx so it stays a Server Component. Add the directive only to interactive leaf components if any are introduced."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/img-element",
+      "file": "app/components/Hero.tsx",
+      "line": 4,
+      "title": "Plain <img> used for a large hero image",
+      "explanation": "The hero image is a plain <img> with no width/height or lazy/priority handling. The file name suggests a 4000x2500 source, and it sits at the top of the page in a header, so it is likely above the fold. This loses next/image resizing, modern formats and size reservation, which can hurt LCP and cause layout shift. Assumption: the file name reflects the real dimensions, and no lint-rule suppression is visible. Severity is kept low because the image size is only inferred from the name.",
+      "evidence": "<img src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" />",
+      "suggested_fix": "Use next/image: <Image src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" width={1200} height={750} priority /> with sizes suited to the layout."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only static reading of the 7 source and config files; nothing was run or built.",
+    "No ESLint config or next.config.* exists in the fixture, so lint enforcement could not be checked.",
+    "Checkout.tsx is not imported by any file, so whether it is rendered, and in which route, was not traced.",
+    "The real size of /hero-4000x2500.jpg was not verified (public/ is absent); size is inferred from the file name.",
+    "Color contrast, focus behavior and screen-reader output cannot be verified from source; no accessibility issues were found in the JSX that was read."
+  ]
+}

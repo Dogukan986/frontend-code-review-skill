@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/Leaderboard.tsx, src/TodoList.tsx; package.json and tsconfig.json read for context: React 18.3, strict true, no Next.js)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/expensive-render-work",
+      "file": "src/Leaderboard.tsx",
+      "line": 8,
+      "end_line": 9,
+      "title": "50k-row copy, sort and filter re-run on every keystroke",
+      "explanation": "The comment on line 5 states that `players` always holds about 50,000 rows. Every keystroke in the search input calls setQuery, which re-renders the component. Each render copies the array, sorts it (O(n log n)) and filters it, although the sort order depends only on `players` and not on `query`. This blocks the main thread on each keystroke, so typing in the search box can lag. The size comes from a code comment, not from a data source I could inspect.",
+      "evidence": "const ranked = [...players].sort((a, b) => b.score - a.score);\n  const visible = ranked.filter((p) => p.name.includes(query)).slice(0, 20);",
+      "suggested_fix": "Compute the sorted list once with useMemo keyed on `players` (const ranked = useMemo(() => [...players].sort((a, b) => b.score - a.score), [players])), and optionally memoize the filtered slice on [ranked, query]. Better still, sort on the server or when the data loads. If typing is still slow, use useDeferredValue for `query`."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/index-key",
+      "file": "src/TodoList.tsx",
+      "line": 6,
+      "end_line": 8,
+      "title": "Array index used as key on removable rows that contain uncontrolled inputs",
+      "explanation": "Rows can be removed through onRemove, and each row holds an uncontrolled <input defaultValue={t.text}>. With key={i}, removing a middle todo makes React reuse the DOM nodes by position. The input keeps its old internal value, because defaultValue is only read on mount. After a removal, the remaining rows can show text that belongs to a different todo, and any text the user typed into an input stays attached to the wrong row. The aria-label also uses the index, so it is renumbered, which is acceptable.",
+      "evidence": "{todos.map((t, i) => (\n        <li key={i}>\n          <input defaultValue={t.text} aria-label={`Todo ${i + 1}`} />",
+      "suggested_fix": "Use the stable id as the key: <li key={t.id}>. Keep the index only for the aria-label."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only two source files exist in the fixture; both were reviewed in full.",
+    "The 50,000-row size in src/Leaderboard.tsx is taken from a code comment; the data source was not available to confirm it.",
+    "Parent components and the real callers of Leaderboard and TodoList were not present, so render frequency from outside the components was not assessed.",
+    "No ESLint config was found; the tsconfig has strict true."
+  ]
+}

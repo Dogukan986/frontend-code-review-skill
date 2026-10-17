@@ -1,0 +1,56 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/hooks-bugs (whole project: src/*.tsx)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState is called after an early return, so the hook count changes between renders",
+      "explanation": "The early return on line 4 runs before the useState call on line 6. When user is null the component calls zero hooks; when user later becomes non-null it calls one hook. React detects the changed hook count between renders and throws, which crashes the Profile subtree on a normal state change (login after a null user). The eslint-disable-next-line react-hooks/rules-of-hooks comment on line 5 is a suppression that silences the rules-of-hooks check for exactly this line, which is why tooling stays quiet. The impact is a thrown render error in a core flow, so critical is justified because the failure is traced in the code read.",
+      "evidence": "  if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Move the useState call above the early return so every render calls the same hooks in the same order, for example: const [editing, setEditing] = useState(false); then if (!user) return null;. Remove the eslint-disable comment once the order is fixed."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 6,
+      "end_line": 10,
+      "title": "Autosave interval captures the initial empty draft and never saves what the user typed",
+      "explanation": "The effect has an empty dependency array, so it runs once on mount. The arrow function passed to setInterval closes over draft from that first render, which is \"\". Every 5 seconds save(\"\") is called regardless of the textarea content, so user-typed text is never autosaved. The eslint-disable-next-line react-hooks/exhaustive-deps comment on line 6 suppresses the warning that would have flagged the missing draft dependency. The comment does not justify the omission: the code depends on the freshness of draft, so this is not an intentional run-once effect.",
+      "evidence": "  // eslint-disable-next-line react-hooks/exhaustive-deps\n  useEffect(() => {\n    const id = setInterval(() => save(draft), 5000);\n    return () => clearInterval(id);\n  }, []);",
+      "suggested_fix": "Keep the latest draft in a ref updated on each render (const draftRef = useRef(draft); draftRef.current = draft;) and call save(draftRef.current) inside the interval, or add draft to the dependency list and reset the interval on change. Remove the eslint-disable comment."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 6,
+      "end_line": 9,
+      "title": "Resize listener is added in useEffect and never removed",
+      "explanation": "The effect registers a window resize listener on line 8 but returns no cleanup function. Each mount of ResizeWatcher adds another listener that stays attached after unmount, and it keeps calling setWidth on an unmounted component. Repeated mount and unmount (for example, toggling the component on a route) accumulates listeners on window.",
+      "evidence": "  useEffect(() => {\n    const onResize = () => setWidth(window.innerWidth);\n    window.addEventListener(\"resize\", onResize);\n  }, []);",
+      "suggested_fix": "Return a cleanup from the effect: return () => window.removeEventListener(\"resize\", onResize);"
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Reviewed only the three files in src/ plus package.json and tsconfig.json. No ESLint config, next.config, or CI config is present in the fixture, so lint coverage could not be checked.",
+    "The fixture uses React ^18.3.0 and no Next.js; the Next.js and accessibility references were checked and produced no findings.",
+    "No runtime behavior was executed. F1 and F2 are traced from the source; F3's leak impact depends on how often the component mounts in the real app, which is not visible here.",
+    "The rendering and TypeScript reference categories produced no findings: no explicit any, unsafe casts, non-null assertions, or unvalidated external data appear in the fixture.",
+    "Commands were not run, and nothing in the fixture was modified."
+  ]
+}

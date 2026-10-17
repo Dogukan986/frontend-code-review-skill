@@ -1,0 +1,16 @@
+{
+  "name": "frontend-code-review-skill",
+  "version": "0.1.0",
+  "description": "A portable Agent Skill that reviews React, Next.js and TypeScript code with evidence-backed findings.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "test": "node --test tests/unit/*.test.mjs",
+    "check": "node scripts/validate.mjs && node --test tests/unit/*.test.mjs",
+    "eval:score": "node scripts/eval.mjs score",
+    "eval:run-all": "node scripts/eval.mjs run-all"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "1",
+  "scope": "clean-traps/ (whole project: package.json, tsconfig.json, src/Steps.tsx, src/Field.tsx, src/Counter.tsx, src/Dialog.tsx)",
+  "findings": [],
+  "suspicious_content": [],
+  "limitations": [
+    "Project is React 18 with no Next.js dependency and no framework config, so the Next.js rules were not applied.",
+    "No ESLint config, eslint-disable comments or CI config are present in the fixture, so lint overlap could not be assessed from configuration.",
+    "Steps.tsx uses key={i} on a constant list that never reorders and holds no per-item state, so rendering/index-key does not apply.",
+    "Counter.tsx useEffect with [] runs once on mount and touches only document.title; the in-code comment documents the intent.",
+    "Dialog.tsx uses native dialog with showModal and aria-labelledby, so modal-focus does not apply.",
+    "Color contrast, focus appearance, screen-reader output and runtime behaviour cannot be verified from source alone.",
+    "No stylesheets, assets, test files or build output were present to review."
+  ]
+}

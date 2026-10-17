@@ -1,0 +1,55 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/hooks-bugs (whole project: src/ResizeWatcher.tsx, src/Profile.tsx, src/AutoSave.tsx)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState is called after an early return, so the hook count changes between renders",
+      "explanation": "The early return `if (!user) return null;` runs before `useState` on line 6. When `user` is truthy on one render and null on the next (for example after a logout or a prop reset), the component returns before calling `useState`, so React receives fewer hooks than on the previous render and throws 'Rendered fewer hooks than expected'. This unmounts the component subtree on a state change. The eslint-disable-next-line react-hooks/rules-of-hooks comment on line 5 suppresses the rule that would flag this, so the tooling stays silent. Assumption: the parent can pass user from a non-null value to null while Profile stays mounted. Fix: move the useState call above the early return.",
+      "evidence": "if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Call all hooks unconditionally before any early return:\n\nexport function Profile({ user }: { user: { name: string } | null }) {\n  const [editing, setEditing] = useState(false);\n  if (!user) return null;\n  // ...\n}\n\nAlso remove the eslint-disable comment so the rules-of-hooks rule can check the component again."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 8,
+      "end_line": 10,
+      "title": "Autosave interval captures the initial empty draft and always saves an empty string",
+      "explanation": "The effect runs once on mount because of the [] dependency list, so the arrow function passed to setInterval closes over the `draft` value from the first render, which is \"\". Every tick calls save(\"\") no matter what the user types, so the autosave writes an empty value every 5 seconds. The same closure also keeps the first `save` prop. The eslint-disable-next-line react-hooks/exhaustive-deps comment on line 6 suppresses the warning that would report the missing dependencies. Fix: keep the latest draft in a ref updated on each render, or add draft and save to the dependency list and restart the interval.",
+      "evidence": "const id = setInterval(() => save(draft), 5000);",
+      "suggested_fix": "Read the latest value through a ref:\n\nconst draftRef = useRef(draft);\ndraftRef.current = draft;\nuseEffect(() => {\n  const id = setInterval(() => save(draftRef.current), 5000);\n  return () => clearInterval(id);\n}, [save]);\n\nOr include draft in the dependency list. Remove the eslint-disable comment once the dependencies are correct."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 6,
+      "end_line": 9,
+      "title": "Resize listener is added in useEffect and never removed",
+      "explanation": "The effect calls window.addEventListener('resize', onResize) and returns no cleanup function. Each mount of ResizeWatcher adds another listener that stays attached after unmount, and the listener keeps calling setWidth on the unmounted component. Mounting and unmounting the component repeatedly therefore accumulates listeners on window. Fix: return a cleanup function that calls window.removeEventListener with the same handler.",
+      "evidence": "window.addEventListener(\"resize\", onResize);",
+      "suggested_fix": "Return a cleanup from the effect:\n\nuseEffect(() => {\n  const onResize = () => setWidth(window.innerWidth);\n  window.addEventListener(\"resize\", onResize);\n  return () => window.removeEventListener(\"resize\", onResize);\n}, []);"
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Reviewed only the three files under src/ and the package.json and tsconfig.json in the fixture. No ESLint config, CI config, lockfile or next.config was present, so the active lint setup could not be checked.",
+    "No runtime behaviour was executed; the findings are based on reading the code. The F1 failure path assumes the parent can change user from non-null to null while Profile stays mounted, and the parent was not visible.",
+    "The project declares React ^18.3.0. The analysis assumes React 18 behaviour; there are no Next.js files, so App Router and Pages Router checks were not applicable.",
+    "No accessibility or TypeScript findings were reported. Profile.tsx, AutoSave.tsx and ResizeWatcher.tsx were checked for them, and the tsconfig has strict set to true."
+  ]
+}

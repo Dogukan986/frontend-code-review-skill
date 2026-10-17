@@ -1,0 +1,51 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (package.json, tsconfig.json, src/api.ts)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/unsafe-assertion",
+      "file": "src/api.ts",
+      "line": 13,
+      "title": "Stored settings cast through unknown to User without validation",
+      "explanation": "localStorage.getItem returns string | null; `raw as string` hides a null when nothing is stored, and JSON.parse(null) yields null (JSON.parse of a missing key) which is then asserted via `as unknown as User`. Callers receive a value typed as User that may be null or any shape, and fail later far from the cast. tsconfig has strict: true, which does not catch explicit assertions. The same line also trusts unvalidated external (storage) data (ts/unvalidated-external-data).",
+      "evidence": "return JSON.parse(raw as string) as unknown as User;",
+      "suggested_fix": "Handle the null case explicitly, parse into unknown and validate with a schema or type guard before returning User (or return User | null)."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/any-boundary",
+      "file": "src/api.ts",
+      "line": 6,
+      "title": "Exported getUser returns Promise<any>",
+      "explanation": "The exported function's return type is any, so every caller's use of the user (and of the unvalidated fetch response, which is also not checked for res.ok) is unchecked. The User interface in the same file is not used.",
+      "evidence": "export async function getUser(id: string): Promise<any> {",
+      "suggested_fix": "Return Promise<User>, validating the parsed JSON with a guard or schema (or return unknown and narrow at the call site); check res.ok before parsing."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/non-null-assertion",
+      "file": "src/api.ts",
+      "line": 17,
+      "title": "Non-null assertion on Map.get result",
+      "explanation": "Map.get returns undefined when the key is absent; if no \"admin\" entry exists, `.email` throws a TypeError at runtime instead of being handled.",
+      "evidence": "return users.get(\"admin\")!.email;",
+      "suggested_fix": "Use `users.get(\"admin\")?.email` and return string | undefined, or throw an explicit error when missing."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only three files exist in the project (package.json, tsconfig.json, src/api.ts); no components were present, so hooks, rendering, Next.js and accessibility rules were not applicable.",
+    "Callers of the api.ts functions were not available, so the downstream impact of the any return type was not traced.",
+    "No ESLint config was present; tsconfig has strict: true."
+  ]
+}

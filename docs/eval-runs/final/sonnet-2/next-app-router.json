@@ -1,0 +1,52 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (next-app-router fixture: app/, data/, package.json, tsconfig.json)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/secret-in-client",
+      "file": "app/components/Checkout.tsx",
+      "line": 12,
+      "title": "Server-only payment secret read in a client component",
+      "explanation": "Checkout.tsx is a \"use client\" module and reads process.env.PAYMENT_SECRET_KEY (no NEXT_PUBLIC_ prefix) to build a Bearer token. Non-prefixed env vars are undefined in the browser, so the request is sent with 'Bearer undefined' and the payment call fails. Charging from the browser with a secret key is also wrong by design. No secret value is hard-coded and Checkout is not currently imported anywhere in the fixture, so this is rated high rather than critical.",
+      "evidence": "headers: { Authorization: `Bearer ${process.env.PAYMENT_SECRET_KEY}` },",
+      "suggested_fix": "Move the charge call into a Server Action or Route Handler that reads PAYMENT_SECRET_KEY on the server; have the client component call that and keep only the button/status UI client-side."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "nextjs",
+      "rule": "next/img-element",
+      "file": "app/components/Hero.tsx",
+      "line": 4,
+      "title": "Large hero image uses plain <img> instead of next/image",
+      "explanation": "The filename indicates a 4000x2500 source, and Hero is the first element rendered in the home page, so it is likely above the fold. A plain <img> gets no automatic resizing, modern formats or priority loading, which hurts LCP, and has no width/height so it can cause layout shift. Assumption: the file is actually that large, based on its name. No eslint-disable is visible, and no ESLint config exists in the fixture.",
+      "evidence": "<img src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" />",
+      "suggested_fix": "Use next/image: <Image src=\"/hero-4000x2500.jpg\" alt=\"Mountains at sunrise\" width={1200} height={750} priority sizes=\"100vw\" />."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "nextjs",
+      "rule": "next/unnecessary-use-client",
+      "file": "app/page.tsx",
+      "line": 1,
+      "title": "Page marked \"use client\" without using any client-only feature",
+      "explanation": "The page uses no state, effects, handlers or browser APIs; it only renders Hero and maps a static array. The directive turns the whole page into a client component, shipping its JS to the browser and preventing it from fetching data on the server later. Impact is small today because the data is a static import, hence low.",
+      "evidence": "\"use client\";",
+      "suggested_fix": "Remove the \"use client\" directive so the page stays a Server Component; add the directive only to interactive leaf components such as Checkout."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Static read of the 7 project files only; nothing was run, built or linted.",
+    "No ESLint config or next.config.* exists in the fixture, so lint suppressions and image domain settings could not be checked.",
+    "The size of /hero-4000x2500.jpg and whether Hero renders above the fold are inferred from its filename and position, since the public/ asset is not present.",
+    "Checkout is not imported by any file in the fixture; how it is used in practice could not be verified."
+  ]
+}

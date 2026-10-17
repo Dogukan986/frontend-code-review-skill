@@ -1,0 +1,41 @@
+name: CI
+
+# Only deterministic checks are required. Agent evaluations (scripts/eval.mjs) depend on
+# non-deterministic model output and are run manually; see docs/evaluation.md.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm run validate
+      - run: npm test
+
+  skills-ref:
+    # Official Agent Skills reference validator, pinned to a reviewed commit.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: agentskills/agentskills
+          ref: 69ef37e9424c0a7ea9dd2293b559e43ec8176379
+          path: .agentskills
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: pip install ./.agentskills/skills-ref
+      - run: skills-ref validate skills/frontend-code-review

@@ -1,0 +1,64 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/clickable-non-interactive",
+      "file": "src/SignupForm.tsx",
+      "line": 5,
+      "title": "Sign up action is a clickable div, not keyboard accessible",
+      "explanation": "The primary submit action is a <div> with onClick and no role, tabIndex or key handler, so keyboard and screen-reader users cannot reach or activate it. There is no real submit button in the form to provide the same action.",
+      "evidence": "<div className=\"btn\" onClick={onSubmit}>Sign up</div>",
+      "suggested_fix": "Replace with <button type=\"submit\">Sign up</button> and drop the onClick (the form's onSubmit handles it)."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "src/SignupForm.tsx",
+      "line": 4,
+      "title": "Email input has only a placeholder, no label",
+      "explanation": "The input has no associated <label>, aria-label or aria-labelledby; a placeholder is not an accessible label. Screen-reader users cannot identify the field in the signup flow.",
+      "evidence": "<input type=\"email\" placeholder=\"Email\" />",
+      "suggested_fix": "Add <label htmlFor=\"email\">Email</label> and id=\"email\" on the input (or an aria-label)."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/modal-focus",
+      "file": "src/Modal.tsx",
+      "line": 5,
+      "title": "Custom modal has no dialog semantics or focus management",
+      "explanation": "The modal is plain divs with no role=\"dialog\", aria-modal, accessible name, initial focus, focus trap, or Escape-to-close, and no accessible dialog library is imported. Keyboard focus stays behind the overlay and users cannot dismiss it.",
+      "evidence": "return <div className=\"modal-overlay\"><div className=\"modal\">{children}</div></div>;",
+      "suggested_fix": "Use native <dialog> with showModal(), or an accessible library (Radix Dialog, Headless UI, React Aria); otherwise add role=\"dialog\" aria-modal=\"true\" aria-labelledby, move focus in, trap it, close on Escape and restore focus on close."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/missing-alt",
+      "file": "src/Avatar.tsx",
+      "line": 2,
+      "title": "Image has no alt attribute",
+      "explanation": "The <img> has no alt attribute at all, so screen readers may announce the file URL. Use alt=\"\" if decorative.",
+      "evidence": "return <img src={src} className=\"avatar\" />;",
+      "suggested_fix": "Add alt text (e.g. an alt prop describing the user) or alt=\"\" if the avatar is purely decorative."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the 3 source files in src/ were reviewed; no ESLint config was present so jsx-a11y status is unknown.",
+    "Color contrast, focus styles and actual screen-reader output cannot be verified from source.",
+    "Callers of these components were not present, so how they are used (e.g. Modal content) was not checked."
+  ]
+}

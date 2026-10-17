@@ -1,0 +1,55 @@
+{
+  "schema_version": "1",
+  "scope": "whole project: package.json, tsconfig.json, src/api.ts",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/any-boundary",
+      "file": "src/api.ts",
+      "line": 6,
+      "end_line": 8,
+      "title": "Exported getUser returns Promise<any> and passes unvalidated response data",
+      "explanation": "getUser is exported with return type Promise<any>, so every caller receives an unchecked value and the compiler cannot catch wrong shapes at the call site. The response is never checked: res.ok is not tested, so a 404 or 500 response body is returned as if it were a user, and callers that read fields such as .email will get undefined or error payloads without any type error. Fixing the type alone is not enough because the cast-free json() result still needs validation.",
+      "evidence": "export async function getUser(id: string): Promise<any> {\n  const res = await fetch(`/api/users/${id}`);\n  return res.json();",
+      "suggested_fix": "Declare the return type as Promise<User> (or Promise<unknown>) and validate the payload with a schema or type guard before returning it. Check res.ok and throw or return an error result when it is false."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/unsafe-assertion",
+      "file": "src/api.ts",
+      "line": 12,
+      "end_line": 13,
+      "title": "loadSettings asserts localStorage data to User without handling a missing key",
+      "explanation": "localStorage.getItem returns null when the \"settings\" key is absent. The cast raw as string hides that, and JSON.parse(null) returns null at runtime. The double cast then types null as User, so a caller doing settings.email throws a TypeError. Stored data that is not valid JSON makes JSON.parse throw a SyntaxError. The as unknown as User cast also asserts the shape of external, user-controllable storage without any check.",
+      "evidence": "  const raw = localStorage.getItem(\"settings\");\n  return JSON.parse(raw as string) as unknown as User;",
+      "suggested_fix": "Handle the null case explicitly (return a default or throw a clear error). Wrap JSON.parse in try/catch and validate the parsed value with a type guard or schema before returning it as User."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/non-null-assertion",
+      "file": "src/api.ts",
+      "line": 17,
+      "title": "firstAdmin uses a non-null assertion on Map.get, which is optional",
+      "explanation": "Map.get returns undefined when the map has no \"admin\" key. The ! assertion removes that possibility from the type, so firstAdmin throws a TypeError at runtime for any map without an admin entry. The caller supplies the map, so the impact depends on the data, which is why the severity is low.",
+      "evidence": "  return users.get(\"admin\")!.email;",
+      "suggested_fix": "Check the result of users.get(\"admin\") and handle the missing case, for example by returning undefined or throwing an explicit Error with a clear message."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Reviewed only the three files in the fixture (package.json, tsconfig.json, src/api.ts). No other source files, tests, lint configuration, CI or suppressions were present to inspect.",
+    "The API contract for /api/users is not visible, so the shape of the getUser response could not be confirmed; F1 is based on the absence of any validation in the code.",
+    "No React components, hooks, JSX, Next.js config or accessibility markup exist in the fixture, so the react-hooks, rendering, nextjs and accessibility references were not applied.",
+    "tsc and other tooling were not run (read-only review). strict is true in tsconfig.json, so no implicit-any findings were raised.",
+    "File listing used the find command through Bash because the Glob tool was unavailable; no files were modified."
+  ]
+}

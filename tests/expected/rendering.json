@@ -1,0 +1,36 @@
+{
+  "schema_version": "1",
+  "scope": "tests/fixtures/rendering",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/index-key",
+      "file": "src/TodoList.tsx",
+      "line": 7,
+      "title": "Array index used as key on a removable list with inputs",
+      "explanation": "Rows contain uncontrolled inputs and can be removed. With index keys React reuses the wrong row, so typed text stays on the wrong item after a removal.",
+      "evidence": "<li key={i}>",
+      "suggested_fix": "Use `key={t.id}`."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "likely",
+      "category": "rendering",
+      "rule": "rendering/expensive-render-work",
+      "file": "src/Leaderboard.tsx",
+      "line": 8,
+      "title": "Full 50k-row sort on every keystroke",
+      "explanation": "A comment states `players` holds about 50,000 rows. The sort runs in render and the component re-renders on every keystroke in the search box although the ranking only depends on `players`.",
+      "evidence": "const ranked = [...players].sort((a, b) => b.score - a.score);",
+      "suggested_fix": "Wrap the sort in `useMemo(() => ..., [players])`, or sort once where the data is loaded."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Expected result for the evaluation harness; labelled by the maintainers."
+  ]
+}

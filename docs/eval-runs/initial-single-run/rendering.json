@@ -1,0 +1,43 @@
+{
+  "schema_version": "1",
+  "scope": "src/ (whole project; no scope was specified)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/expensive-render-work",
+      "file": "src/Leaderboard.tsx",
+      "line": 8,
+      "end_line": 9,
+      "title": "Sorting and filtering ~50,000 rows on every keystroke",
+      "explanation": "A comment states `players` always holds about 50,000 rows. The component copies and sorts the whole array and then filters it during render. The `query` state changes on every keystroke, so each keystroke re-runs an O(n log n) sort and an O(n) filter. The sort does not depend on `query`, so that work is wasted. This blocks the main thread and makes typing in the search box laggy.",
+      "evidence": "  const ranked = [...players].sort((a, b) => b.score - a.score);\n  const visible = ranked.filter((p) => p.name.includes(query)).slice(0, 20);",
+      "suggested_fix": "Compute `ranked` once with `useMemo(() => [...players].sort(...), [players])`, or sort before passing the data in or on the server. Also consider `useDeferredValue(query)` for the filter, or server-side search and pagination so the client does not hold 50k rows."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/index-key",
+      "file": "src/TodoList.tsx",
+      "line": 6,
+      "end_line": 8,
+      "title": "Array index used as key on a removable list of uncontrolled inputs",
+      "explanation": "Todos can be removed through `onRemove`, and each row holds an uncontrolled `<input defaultValue>` whose typed text lives in the DOM. With `key={i}`, removing a middle item makes React reuse the DOM nodes by position. `defaultValue` is only read on mount, so the remaining rows keep the previous row's edited text and show the wrong content next to the wrong Remove button.",
+      "evidence": "      {todos.map((t, i) => (\n        <li key={i}>\n          <input defaultValue={t.text} aria-label={`Todo ${i + 1}`} />",
+      "suggested_fix": "Use the stable id: `<li key={t.id}>`. The index can stay in the aria-label."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only src/Leaderboard.tsx and src/TodoList.tsx exist in the fixture and both were reviewed.",
+    "No ESLint or Next.js config was present, so lint overlap could not be checked.",
+    "The 50,000-row size comes from a code comment and was not verified against the real data source.",
+    "The parent components that render these were not available, so render frequency beyond the local state could not be checked.",
+    "Only the rendering reference was loaded, as the code did not need the hooks, Next.js, TypeScript or accessibility references.",
+    "No Glob or Grep tool was available in this session, so file listing used a read-only `find` through Bash."
+  ]
+}

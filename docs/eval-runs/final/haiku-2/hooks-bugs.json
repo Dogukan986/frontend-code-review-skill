@@ -1,0 +1,55 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/hooks-bugs (whole project)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "critical",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState is called after an early return, so hook count changes between renders",
+      "explanation": "Line 4 returns null when `user` is falsy, before the `useState` call on line 6. On a render where `user` is set, Profile calls one hook; when `user` becomes null, the component returns before calling it, so the hook count drops. React throws ('Rendered fewer hooks than expected') and the component crashes. The eslint-disable-next-line comment on line 5 suppresses react-hooks/rules-of-hooks, which is why tooling stayed silent. The failure is traced in this file alone: the transition from a user to null is the only input needed.",
+      "evidence": "if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Call useState before the early return and keep the null check after all hooks: const [editing, setEditing] = useState(false); then if (!user) return null;. Remove the eslint-disable comment so rules-of-hooks can flag future violations."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 8,
+      "end_line": 8,
+      "title": "Autosave interval always saves the initial empty draft",
+      "explanation": "The effect runs once (deps `[]`), so the arrow function passed to setInterval captures `draft` from the first render, which is \"\". The interval fires every 5 seconds and calls save(\"\") forever, so the user's typed text is never autosaved. The same stale capture applies to the `save` prop, which is also missing from the deps. The lint suppression on line 6 (react-hooks/exhaustive-deps) hides the omission. Draft is user data, so the impact is high. Other occurrences: none.",
+      "evidence": "const id = setInterval(() => save(draft), 5000);",
+      "suggested_fix": "Keep the latest draft in a ref updated each render (const draftRef = useRef(draft); draftRef.current = draft;) and call save(draftRef.current) inside the interval, or add [draft, save] to the deps and reset the interval on each change. Remove the eslint-disable comment."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 8,
+      "end_line": 8,
+      "title": "Resize listener is added but never removed",
+      "explanation": "The effect registers a window resize listener and returns no cleanup function. Each mount adds one listener that stays attached after unmount and keeps calling setWidth on an unmounted component. Remounting the component (for example on route changes) stacks more listeners, one per mount. Traced in this file: the effect has no return value, so nothing removes the listener.",
+      "evidence": "window.addEventListener(\"resize\", onResize);",
+      "suggested_fix": "Return a cleanup from the effect: useEffect(() => { const onResize = () => setWidth(window.innerWidth); window.addEventListener(\"resize\", onResize); return () => window.removeEventListener(\"resize\", onResize); }, []);"
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Reviewed only the files in fixtures/hooks-bugs: package.json, tsconfig.json and the three files in src/. No ESLint config, CI config or other lint settings were present to check, so tooling coverage is inferred from the inline eslint-disable comments only.",
+    "The project declares React ^18.3.0 with no Next.js, so the nextjs category and the React Compiler were not applicable; no App Router or Pages Router context exists to check.",
+    "No tests were run and no code was executed. The runtime failures in F1 and F3 are traced from the source and not observed.",
+    "Accessibility checks were limited to the JSX visible in the three files; the textarea in AutoSave.tsx has an aria-label and the Profile button has text, so no a11y finding was raised. Contrast and screen-reader output cannot be verified from source."
+  ]
+}

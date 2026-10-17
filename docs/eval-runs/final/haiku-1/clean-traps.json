@@ -1,0 +1,16 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/clean-traps (whole project: package.json, tsconfig.json, src/Steps.tsx, src/Field.tsx, src/Counter.tsx, src/Dialog.tsx)",
+  "findings": [],
+  "suspicious_content": [],
+  "limitations": [
+    "No ESLint config, CI config or editor setup is present in the fixture, so lint suppressions and enforced rules could not be checked; none were visible in the reviewed files.",
+    "No next.config.* or Next.js dependency exists; the Next.js references (nextjs/*) were not applied because the project is a plain React 18 app.",
+    "Steps.tsx uses key={i} on a static constant list that never reorders and holds no per-item state, so it was not reported (false-positive guard in rendering/index-key).",
+    "Counter.tsx useEffect with [] only touches document.title and is a documented run-once effect, so it was not reported.",
+    "Dialog.tsx uses native dialog with showModal(), aria-labelledby and onClose, so modal-focus rules were not triggered; focus return and Escape handling were assumed to be provided by the native dialog element and were not runtime-verified.",
+    "Color contrast, focus appearance, screen-reader output and runtime rendering behaviour cannot be verified from source alone.",
+    "No git repository metadata was available, so the review covered the working tree only.",
+    "The project has no README or docs; intent was inferred from the code and comments only."
+  ]
+}

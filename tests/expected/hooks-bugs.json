@@ -1,0 +1,49 @@
+{
+  "schema_version": "1",
+  "scope": "tests/fixtures/hooks-bugs",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 8,
+      "title": "Auto-save interval keeps saving the first draft",
+      "explanation": "The effect has an empty dependency array (lint rule suppressed on the line above) but the interval callback reads `draft`. It captures the initial empty string, so every save writes stale text.",
+      "evidence": "const id = setInterval(() => save(draft), 5000);",
+      "suggested_fix": "Include `draft` and `save` in the dependency array, or keep the latest draft in a ref that the interval reads."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 8,
+      "title": "Resize listener is never removed",
+      "explanation": "The effect registers a window listener and returns no cleanup, so the listener (and its state setter) outlives the component and stacks up on every remount.",
+      "evidence": "window.addEventListener(\"resize\", onResize);",
+      "suggested_fix": "Return `() => window.removeEventListener(\"resize\", onResize)` from the effect."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 6,
+      "title": "useState is called after an early return",
+      "explanation": "When `user` changes from null to an object the hook count changes between renders, which makes React throw. The rules-of-hooks lint rule is suppressed on the line above.",
+      "evidence": "const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Call `useState` before the early return and keep the `if (!user) return null;` after all hooks."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Expected result for the evaluation harness; labelled by the maintainers."
+  ]
+}

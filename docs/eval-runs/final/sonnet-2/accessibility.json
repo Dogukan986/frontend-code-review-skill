@@ -1,0 +1,64 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/unlabeled-control",
+      "file": "src/SignupForm.tsx",
+      "line": 4,
+      "title": "Email input has no programmatic label",
+      "explanation": "The email field in the signup form has only a placeholder, no label, aria-label or aria-labelledby. Screen-reader users cannot tell what the field is once it has content, and autofill and click-target behaviour suffer. This is a main-flow form field.",
+      "evidence": "<input type=\"email\" placeholder=\"Email\" />",
+      "suggested_fix": "Add <label htmlFor=\"email\">Email</label> and give the input id=\"email\" (or add aria-label=\"Email\")."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/clickable-non-interactive",
+      "file": "src/SignupForm.tsx",
+      "line": 5,
+      "title": "Sign up action is a clickable div",
+      "explanation": "The primary action is a div with onClick and no role, tabIndex or key handler, so keyboard and assistive-technology users cannot focus or activate it. There is no submit button in the form, so the form cannot be submitted via the button by keyboard (implicit Enter submission from the input may still work).",
+      "evidence": "<div className=\"btn\" onClick={onSubmit}>Sign up</div>",
+      "suggested_fix": "Use <button type=\"submit\">Sign up</button> and drop the onClick, since the form already has onSubmit."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "likely",
+      "category": "accessibility",
+      "rule": "a11y/modal-focus",
+      "file": "src/Modal.tsx",
+      "line": 5,
+      "title": "Custom modal has no dialog semantics or focus management",
+      "explanation": "The modal is built from plain divs with no role=\"dialog\", aria-modal, accessible name, initial focus, focus trap or Escape-to-close, and it imports no accessible dialog library. Focus stays behind the overlay and keyboard users cannot dismiss it. Assumption: the Modal is used for blocking content and no parent handles focus (not visible in this project).",
+      "evidence": "return <div className=\"modal-overlay\"><div className=\"modal\">{children}</div></div>;",
+      "suggested_fix": "Use native <dialog> with showModal(), or an accessible library (Radix Dialog, Headless UI, React Aria). Otherwise add role=\"dialog\" aria-modal=\"true\" aria-labelledby, move focus in on open, trap focus, close on Escape and restore focus on close."
+    },
+    {
+      "id": "F4",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "accessibility",
+      "rule": "a11y/missing-alt",
+      "file": "src/Avatar.tsx",
+      "line": 2,
+      "title": "Avatar image has no alt attribute",
+      "explanation": "The img has no alt attribute at all, so screen readers may announce the file name or URL. Use alt=\"\" if decorative or a descriptive alt if the avatar conveys information.",
+      "evidence": "return <img src={src} className=\"avatar\" />;",
+      "suggested_fix": "Add an alt prop (e.g. accept alt via props and pass it through), or alt=\"\" when the avatar is decorative."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only 3 source files exist; no Next.js config, ESLint config or usages of these components were present, so callers (e.g. whether Modal's parent manages focus) could not be checked.",
+    "Color contrast, focus appearance and screen-reader output cannot be verified from source.",
+    "Listing used read-only shell find; no search tools were used."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (fixtures/clean-traps)",
+  "findings": [],
+  "suspicious_content": [],
+  "limitations": [
+    "Reviewed the four source files in src/ (Counter.tsx, Dialog.tsx, Field.tsx, Steps.tsx) plus package.json and tsconfig.json. No other project files exist in the fixture.",
+    "The project has no next dependency and no next.config file, so it was treated as a plain React/TypeScript project and the Next.js rules were not applied.",
+    "No ESLint config, CI config or lint suppression comments are present, so whether linting enforces these checks could not be determined.",
+    "Dialog.tsx: the parent component that supplies onClose is not in the fixture. Whether onClose re-fires when the effect calls el.close() depends on the parent's state handling and was not assessed.",
+    "Accessibility points that need a rendered page (colour contrast, focus appearance, screen-reader output) cannot be verified from source and were not assessed.",
+    "Read-only review: no tsc, tests, build or other project command was run, and no dependencies were installed."
+  ]
+}

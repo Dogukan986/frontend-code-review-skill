@@ -1,0 +1,53 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (fixtures/typescript: package.json, tsconfig.json, src/api.ts)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/any-boundary",
+      "file": "src/api.ts",
+      "line": 6,
+      "end_line": 8,
+      "title": "Exported getUser returns Promise<any> with an unvalidated response",
+      "explanation": "getUser is exported with a Promise<any> return type, so every caller receives an unchecked value. The body returns res.json() (line 8) without checking res.ok and without validating the shape. A non-2xx response with an error JSON body is therefore returned as if it were a user, and a consumer that reads user.email will get undefined or a crash far from this function. The same any also appears to be the only type information callers get, so the mistake is hidden at every call site. Same root cause, so reported once.",
+      "evidence": "export async function getUser(id: string): Promise<any> {",
+      "suggested_fix": "Return Promise<User> (or Promise<unknown>) and validate the body before returning it: check res.ok and throw on failure, then narrow the parsed JSON with a type guard or schema validator (for example a function isUser(x: unknown): x is User that checks typeof id and email) instead of returning res.json() directly."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/unsafe-assertion",
+      "file": "src/api.ts",
+      "line": 13,
+      "title": "localStorage data is cast straight to User without validation",
+      "explanation": "The value from localStorage is parsed and cast with 'as unknown as User', which tells the compiler it is a User without checking anything. Traced failures: if the key 'settings' is absent, getItem returns null, JSON.parse(null) returns null, and loadSettings resolves to null typed as User, so a caller reading settings.id throws a TypeError. If the stored string is corrupted, JSON.parse throws and the async function rejects. The raw as string cast on the same line also hides the null case from the compiler.",
+      "evidence": "return JSON.parse(raw as string) as unknown as User;",
+      "suggested_fix": "Handle the null case explicitly (for example if (raw === null) return a default or throw a descriptive error), wrap JSON.parse in try/catch, and validate the parsed value with a type guard (isUser) before returning it as User. Remove the 'as unknown as User' double cast."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/non-null-assertion",
+      "file": "src/api.ts",
+      "line": 17,
+      "title": "Non-null assertion on Map.get('admin') can throw",
+      "explanation": "Map.get returns undefined when the key is missing, and the non-null assertion removes that possibility at compile time. If the users map has no 'admin' entry, the expression throws a TypeError at runtime. Severity is low because the input is an in-memory Map passed by the caller and there is no evidence here that the entry is usually absent; it would rise to medium if the map comes from API input.",
+      "evidence": "return users.get(\"admin\")!.email;",
+      "suggested_fix": "Check the result and handle the missing case, for example const admin = users.get(\"admin\"); if (!admin) { throw new Error(\"no admin user\"); } return admin.email; or return undefined and type the return value as string | undefined."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only src/api.ts contains code; package.json and tsconfig.json were read for context. No React or Next.js files exist in the fixture, so the react-hooks, rendering, nextjs and accessibility references were not applied.",
+    "No ESLint config, next.config or CI configuration is present, so lint coverage and suppressions could not be checked.",
+    "The API endpoint behaviour at /api/users/{id} and the callers of getUser, loadSettings and firstAdmin are not in the project, so the runtime shape of responses and the call sites were not verified.",
+    "File listing used read-only find because it was the only listing needed; no project commands were run and no files were modified."
+  ]
+}

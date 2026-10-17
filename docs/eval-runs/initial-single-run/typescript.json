@@ -1,0 +1,51 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/typescript (whole project)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/unsafe-assertion",
+      "file": "src/api.ts",
+      "line": 13,
+      "title": "localStorage data parsed and force-cast to User via as unknown as",
+      "explanation": "localStorage.getItem can return null; `raw as string` hides that, so JSON.parse(null) yields null at runtime. The result is then double-cast with `as unknown as User`, so callers get a value typed User that may be null or have any shape, and fail later far from the cast.",
+      "evidence": "  return JSON.parse(raw as string) as unknown as User;",
+      "suggested_fix": "Handle the null case explicitly, parse into unknown, and validate with a schema or type guard before returning User (or return User | null)."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/any-boundary",
+      "file": "src/api.ts",
+      "line": 6,
+      "title": "Exported getUser returns Promise<any>",
+      "explanation": "The exported function's return type is explicit any, so the unvalidated res.json() result flows into every caller with type checking disabled. Wrong response shapes surface as runtime errors far from this function.",
+      "evidence": "export async function getUser(id: string): Promise<any> {",
+      "suggested_fix": "Return Promise<User> after validating the response (schema or type guard), or Promise<unknown> and narrow at the call site."
+    },
+    {
+      "id": "F3",
+      "severity": "low",
+      "confidence": "confirmed",
+      "category": "typescript",
+      "rule": "ts/non-null-assertion",
+      "file": "src/api.ts",
+      "line": 17,
+      "title": "Non-null assertion on Map.get result",
+      "explanation": "Map.get returns undefined when the key is missing; nothing guarantees an \"admin\" entry exists, so `.email` throws a TypeError when it is absent.",
+      "evidence": "  return users.get(\"admin\")!.email;",
+      "suggested_fix": "Use `users.get(\"admin\")?.email` and return string | undefined, or throw an explicit error when the admin is missing."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only src/api.ts and package.json/tsconfig.json were found and read; the directory could not be listed (no Glob/Grep available), so other files may exist that were not reviewed.",
+    "No ESLint or next.config was found; lint overlap could not be assessed.",
+    "Callers of getUser/loadSettings/firstAdmin were not seen."
+  ]
+}

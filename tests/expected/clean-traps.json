@@ -1,0 +1,9 @@
+{
+  "schema_version": "1",
+  "scope": "tests/fixtures/clean-traps",
+  "findings": [],
+  "suspicious_content": [],
+  "limitations": [
+    "Expected result for the evaluation harness; labelled by the maintainers."
+  ]
+}

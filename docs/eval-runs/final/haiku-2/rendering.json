@@ -1,0 +1,45 @@
+{
+  "schema_version": "1",
+  "scope": "fixtures/rendering (whole project)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/expensive-render-work",
+      "file": "src/Leaderboard.tsx",
+      "line": 8,
+      "end_line": 9,
+      "title": "Full sort of 50,000 rows runs on every keystroke",
+      "explanation": "The players prop holds the full league, about 50,000 rows (comment on line 5). The query state is updated by onChange (line 14), so the component re-renders on every keystroke. Each render copies and sorts all 50,000 rows (line 8) and filters them again (line 9), even though the sort only depends on players and never on query. The main thread is blocked for a full sort on each keystroke. Counter-checks: package.json uses React 18.3 with no React Compiler, so nothing memoizes this automatically; the component is not small or rarely rendered.",
+      "evidence": "  const ranked = [...players].sort((a, b) => b.score - a.score);\n  const visible = ranked.filter((p) => p.name.includes(query)).slice(0, 20);",
+      "suggested_fix": "Memoize the sort on players, for example: const ranked = useMemo(() => [...players].sort((a, b) => b.score - a.score), [players]); and keep only the cheap filter and slice on each render. Alternatively sort once on the server or when the data is loaded."
+    },
+    {
+      "id": "F2",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "category": "rendering",
+      "rule": "rendering/index-key",
+      "file": "src/TodoList.tsx",
+      "line": 7,
+      "end_line": 8,
+      "title": "Index used as key on a list whose rows hold input state and can be removed",
+      "explanation": "Each row is keyed by array index i (line 7). The input uses defaultValue (line 8), so the typed text lives in the DOM instance of that row, and the Remove button (line 9) removes items by id. Trace: todos are [A, B, C]; the user edits the row 0 input to 'A edited'; then clicks Remove on A. The rows re-render with indexes 0 and 1, so the instance with key 0 now receives B's data, but defaultValue does not overwrite the DOM value, so the input still shows 'A edited' on B's row. The edited text appears on the wrong todo, and the instance for C is the one unmounted. The bug occurs on removal alone, independent of the parent component, which is not in the fixture.",
+      "evidence": "        <li key={i}>\n          <input defaultValue={t.text} aria-label={`Todo ${i + 1}`} />",
+      "suggested_fix": "Use the stable item id as the key: <li key={t.id}>. Each row's input state then stays with its todo when others are removed. If the input should always show the todo text, make it a controlled input with value={t.text} and an onChange handler."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the skill files and the fixtures/rendering directory were read, as the run rules required.",
+    "The parent components that render TodoList and Leaderboard, and the source of players and onRemove, are not in the fixture; the 50,000-row size comes from a comment in Leaderboard.tsx (line 5) and was not measured at runtime.",
+    "No ESLint config, CI config or next.config exists in the fixture, so lint overlap could not be assessed; no suppressions were found.",
+    "Hooks checks: Leaderboard.tsx has only a top-level useState call and TodoList.tsx has no hooks, so no react-hooks findings apply.",
+    "TypeScript checks: tsconfig.json sets strict true; no any, unsafe assertions, non-null assertions or unvalidated external data were found.",
+    "Accessibility checks: the Leaderboard search input is labelled through htmlFor=\"q\" matching id=\"q\", and the TodoList input has an aria-label; no a11y findings.",
+    "Next.js checks: not applicable, since package.json declares no Next.js dependency and no next.config file exists.",
+    "No runtime rendering or profiling was performed; the performance impact is estimated from the code."
+  ]
+}

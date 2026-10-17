@@ -1,0 +1,54 @@
+{
+  "schema_version": "1",
+  "scope": "whole project (src/ with package.json and tsconfig.json; React 18.3, TypeScript strict, no Next.js config found)",
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/stale-closure",
+      "file": "src/AutoSave.tsx",
+      "line": 6,
+      "end_line": 10,
+      "title": "Auto-save interval captures the initial empty draft and stale save prop",
+      "explanation": "The effect runs once (empty deps) and the interval callback closes over `draft` from the first render, which is \"\". Every 5 seconds it calls save(\"\") no matter what the user typed, so the user's text is never saved and an empty draft may overwrite stored data. The `save` prop is also captured once and goes stale if the parent passes a new function. The exhaustive-deps rule is silenced by an eslint-disable comment with no justification, which is why tooling stays quiet.",
+      "evidence": "  // eslint-disable-next-line react-hooks/exhaustive-deps\n  useEffect(() => {\n    const id = setInterval(() => save(draft), 5000);\n    return () => clearInterval(id);\n  }, []);",
+      "suggested_fix": "Remove the suppression and add [draft, save] to the dependency array (the interval is recreated on each change, which is acceptable), or keep the latest values in refs updated each render (draftRef.current = draft; saveRef.current = save) and have the interval call saveRef.current(draftRef.current)."
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/conditional-hook",
+      "file": "src/Profile.tsx",
+      "line": 4,
+      "end_line": 6,
+      "title": "useState is called after an early return, changing hook order between renders",
+      "explanation": "When `user` is null the component returns before useState runs (0 hooks). When `user` later becomes non-null (for example after it loads), the same component instance renders one more hook, and React throws \"Rendered more hooks than during the previous render\", crashing the Profile subtree. The rules-of-hooks lint rule is suppressed by an eslint-disable comment, which hides the problem. Not rated critical because I did not see the caller and cannot confirm that the null-to-user transition happens on a core flow.",
+      "evidence": "  if (!user) return null;\n  // eslint-disable-next-line react-hooks/rules-of-hooks\n  const [editing, setEditing] = useState(false);",
+      "suggested_fix": "Move `const [editing, setEditing] = useState(false);` above the `if (!user) return null;` line and delete the eslint-disable comment."
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "confidence": "confirmed",
+      "category": "react-hooks",
+      "rule": "hooks/missing-cleanup",
+      "file": "src/ResizeWatcher.tsx",
+      "line": 6,
+      "end_line": 9,
+      "title": "Resize listener is never removed",
+      "explanation": "The effect adds a window resize listener and returns no cleanup. After the component unmounts the listener stays registered, keeps calling setWidth on an unmounted component and retains it in memory. Each remount adds another listener, so handlers accumulate and fire on every resize event (high frequency).",
+      "evidence": "  useEffect(() => {\n    const onResize = () => setWidth(window.innerWidth);\n    window.addEventListener(\"resize\", onResize);\n  }, []);",
+      "suggested_fix": "Return a cleanup function: `return () => window.removeEventListener(\"resize\", onResize);`. Optionally call onResize() once on mount so the initial width is not 0."
+    }
+  ],
+  "suspicious_content": [],
+  "limitations": [
+    "Only the five files in the fixture were present: package.json, tsconfig.json and three components under src/. No ESLint config, next.config.* or parent components were available, so how these components are used (for example when Profile's user prop changes) was not verified.",
+    "No code was run; findings come from static reading only.",
+    "No Next.js, TypeScript typing, rendering or accessibility issues were found worth reporting in the files reviewed."
+  ]
+}
