@@ -2,7 +2,7 @@
 // Deterministic, dependency-free checks. This is the only required CI gate.
 // Usage: node scripts/validate.mjs
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, basename, join, resolve } from "node:path";
+import { dirname, basename, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateReportShape } from "./lib/schema.mjs";
 
@@ -130,8 +130,11 @@ export function validateFixtures(root) {
  * mid-line, and indentation and trailing whitespace are ignored. The same text on another line fails.
  */
 export function checkEvidence(baseDir, finding) {
-  const file = join(baseDir, finding.file ?? "");
-  if (!existsSync(file)) return [`file "${finding.file}" not found`];
+  const root = resolve(baseDir);
+  const file = resolve(root, String(finding.file ?? ""));
+  // An agent report is untrusted input: never read outside the fixture directory.
+  if (file !== root && !file.startsWith(root + sep)) return [`file "${finding.file}" is outside the reviewed directory`];
+  if (!existsSync(file) || !statSync(file).isFile()) return [`file "${finding.file}" not found`];
   const evidence = String(finding.evidence ?? "").replace(/\r\n/g, "\n").split("\n").map((l) => l.trim()).join("\n").trim();
   if (!evidence) return [`empty evidence at ${finding.file}:${finding.line}`];
   const fileLines = readFileSync(file, "utf8").replace(/\r\n/g, "\n").split("\n");
