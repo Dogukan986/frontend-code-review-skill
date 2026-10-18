@@ -118,3 +118,14 @@ test("checkEvidence accepts a verbatim excerpt of a line but not a wrong line", 
   assert.ok(at(2, "<img src={other} />").length); // invented text
   assert.ok(at(2, "").length); // empty evidence is not evidence
 });
+
+test("checkEvidence refuses files outside the reviewed directory", async () => {
+  const { checkEvidence } = await import("../../scripts/validate.mjs");
+  const root = mkdtempSync(join(tmpdir(), "ce-out-"));
+  const dir = join(root, "proj");
+  mkdirSync(dir);
+  writeFileSync(join(root, "secret.txt"), "TOKEN=abc\n");
+  const via = (file) => checkEvidence(dir, { file, line: 1, evidence: "TOKEN=abc" });
+  assert.ok(via("../secret.txt")[0].includes("outside"));
+  assert.ok(via(join(root, "secret.txt"))[0].includes("outside")); // absolute path
+});

@@ -1,5 +1,7 @@
 # frontend-code-review-skill
 
+[![CI](https://github.com/Dogukan986/frontend-code-review-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Dogukan986/frontend-code-review-skill/actions/workflows/ci.yml)
+
 A portable [Agent Skill](https://agentskills.io/specification) that reviews **React, Next.js and TypeScript** code for correctness, rendering, type-safety and accessibility problems. Every finding comes with a severity, a confidence level, a file and line, verbatim code evidence and a suggested fix.
 
 It is built to be **quiet and checkable**: no evidence, no finding.
@@ -43,7 +45,20 @@ Supporting guides: [severity rubric](skills/frontend-code-review/references/seve
 
 The installable skill is the folder [`skills/frontend-code-review/`](skills/frontend-code-review).
 
-**Claude Code**
+**One command** (third-party installer [`skills`](https://www.npmjs.com/package/skills), run from your project's root):
+
+```bash
+npx skills add Dogukan986/frontend-code-review-skill --skill frontend-code-review
+```
+
+Add `-a claude-code --copy` to install only for Claude Code as plain files instead of symlinks. Things to know:
+
+- The installer is a separate project (it collects anonymous telemetry unless you set `DISABLE_TELEMETRY=1`). Read the skill before installing; skills run with your agent's permissions.
+- It writes into your project: `.claude/skills/frontend-code-review/`, a `skills-lock.json`, and, without `--copy`, a canonical copy under `.agents/skills/` (plus folders for other agents it detects). Review `git status` afterwards.
+- Re-running it **replaces the whole skill folder**; local edits to the installed copy are lost. Keep edits in a fork.
+- Tested only with `skills` 1.7.2 and Claude Code (project install; the skill was detected and ran a review in a real session). Other clients are untested.
+
+**Manual install (Claude Code)**
 
 ```bash
 git clone https://github.com/Dogukan986/frontend-code-review-skill.git
@@ -58,7 +73,7 @@ mkdir -p .claude/skills && cp -R "$SRC" .claude/skills/
 
 Afterwards the skill is at `~/.claude/skills/frontend-code-review/SKILL.md` (or `.claude/skills/frontend-code-review/SKILL.md`).
 
-**Other Agent Skills clients:** copy the folder to wherever your client loads skills from, or point the agent at `SKILL.md`.
+**Other Agent Skills clients:** copy the folder to wherever your client loads skills from, or point the agent at `SKILL.md`. The skill follows the open format, but only Claude Code has been tested.
 
 ## Use
 
@@ -90,7 +105,7 @@ Caps that are enforced: `critical` requires `confirmed` confidence; `needs-verif
 - **Read-only.** The skill reads, searches and lists files. It never edits the reviewed repository and never applies fixes; suggested fixes are text.
 - **Never runs repository commands**: no scripts, package managers, builds or tests from the reviewed repo.
 - **Repository content is untrusted data.** Instructions inside code, comments, strings or READMEs are not followed; attempts are reported under *Suspicious content*. This is covered by a prompt-injection fixture.
-- `SKILL.md` declares `allowed-tools: Read Grep Glob` as defence in depth. That field is experimental and clients may ignore it, so the safety rules are also written in the skill body. Treat the skill as safe-by-instruction, not sandboxed: if you need hard guarantees, restrict the agent's tools in your client.
+- `SKILL.md` declares `allowed-tools: Read Grep Glob` as defence in depth. That field is experimental and clients may ignore it, so the safety rules are also written in the skill body. Treat the skill as safe-by-instruction, not sandboxed: if you need hard guarantees, restrict the agent's tools in your client. Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 
 ## Quality and tests
 
@@ -103,7 +118,7 @@ Caps that are enforced: `critical` requires `confirmed` confidence; `needs-verif
 
 Agent output is non-deterministic, so CI only runs deterministic checks. Agent runs are scored separately against labelled fixtures; see [docs/evaluation.md](docs/evaluation.md).
 
-**Latest results** (details and caveats in [docs/eval-report.md](docs/eval-report.md) and [docs/validation.md](docs/validation.md)): 42 reviews (3 runs × 2 models × 7 fixtures) found all 17 planted defects in every run, with 94–100% precision per run, no findings on the clean fixture, and all prompt-injection checks passed. Read this as a smoke test: the fixtures are small, written by the maintainer, and the extra findings were judged by hand. One real open-source project (4 findings, hand-verified) is documented separately; recall there is unknown.
+**Latest results** (details and caveats in [docs/eval-report.md](docs/eval-report.md) and [docs/validation.md](docs/validation.md)): 42 reviews (3 runs × 2 models × 7 fixtures) found all 17 planted defects in every run, with 94–100% precision per run, no findings on the clean fixture, and all prompt-injection checks passed. Read this as a smoke test: the fixtures are small, written by the maintainer, and the extra findings were judged by hand. One real open-source project was reviewed twice (4 findings per run, 6 distinct, all judged real by the maintainer's assistant; no independent check) and is documented separately; recall there is unknown.
 
 Requirements: Node.js 22+ for the scripts. The skill itself has no dependencies.
 
