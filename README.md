@@ -1,6 +1,6 @@
 # frontend-code-review-skill
 
-[![CI](https://github.com/Dogukan986/frontend-code-review-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/Dogukan986/frontend-code-review-skill/actions/workflows/ci.yml)
+[![CI](https://github.com/DogukannBektas/frontend-code-review-skill/actions/workflows/ci.yml/badge.svg)](https://github.com/DogukannBektas/frontend-code-review-skill/actions/workflows/ci.yml)
 
 A portable [Agent Skill](https://agentskills.io/specification) that reviews **React, Next.js and TypeScript** code for correctness, rendering, type-safety and accessibility problems. Every finding comes with a severity, a confidence level, a file and line, verbatim code evidence and a suggested fix.
 
@@ -48,7 +48,7 @@ The installable skill is the folder [`skills/frontend-code-review/`](skills/fron
 **One command** (third-party installer [`skills`](https://www.npmjs.com/package/skills), run from your project's root):
 
 ```bash
-npx skills add Dogukan986/frontend-code-review-skill --skill frontend-code-review
+npx skills add DogukannBektas/frontend-code-review-skill --skill frontend-code-review
 ```
 
 Add `-a claude-code --copy` to install only for Claude Code as plain files instead of symlinks. Things to know:
@@ -61,7 +61,7 @@ Add `-a claude-code --copy` to install only for Claude Code as plain files inste
 **Manual install (Claude Code)**
 
 ```bash
-git clone https://github.com/Dogukan986/frontend-code-review-skill.git
+git clone https://github.com/DogukannBektas/frontend-code-review-skill.git
 SRC="$PWD/frontend-code-review-skill/skills/frontend-code-review"
 
 # for all your projects

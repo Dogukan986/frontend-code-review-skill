@@ -5,7 +5,7 @@
 Please report suspected vulnerabilities **privately**, not in a public issue.
 
 Use GitHub's private vulnerability reporting: open the repository's **Security** tab and choose **Report a vulnerability**
-(https://github.com/Dogukan986/frontend-code-review-skill/security/advisories/new).
+(https://github.com/DogukannBektas/frontend-code-review-skill/security/advisories/new).
 
 If that option is not available, open a public issue that says only that you have a security report (no details) and the maintainer will arrange a private channel.
 
