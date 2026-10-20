@@ -2,7 +2,7 @@
 
 Follows [Semantic Versioning](https://semver.org/). While the version is `0.x`, rule wording and the report schema may change in minor releases; such changes are listed here.
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-10-20
 
 First public release.
 
